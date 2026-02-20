@@ -15,8 +15,8 @@ from model.stgat_model import STGAT
 
 
 def export_to_onnx(checkpoint_path, output_path, graph_dir="data/graph",
-                   history_steps=18, opset_version=14):
-    """将 PyTorch 模型导出为 ONNX"""
+                   history_steps=42, opset_version=14):
+    """将 V2 PyTorch 模型导出为 ONNX"""
 
     device = torch.device("cpu")
 
@@ -31,10 +31,10 @@ def export_to_onnx(checkpoint_path, output_path, graph_dir="data/graph",
     edge_index = torch.LongTensor(graph["edge_index_np"])
     edge_weight = torch.FloatTensor(graph["edge_weights_np"])
 
-    # 创建模型
-    hidden_dim = train_args.get("hidden_dim", 64)
-    num_heads = train_args.get("num_heads", 4)
-    predict_steps = train_args.get("predict_steps", 7)
+    # V2 模型参数
+    hidden_dim = train_args.get("hidden_dim", 256)
+    num_heads = train_args.get("num_heads", 8)
+    predict_steps = train_args.get("predict_steps", 14)
 
     model = STGAT(
         input_dim=FEATURE_DIM,
@@ -43,6 +43,9 @@ def export_to_onnx(checkpoint_path, output_path, graph_dir="data/graph",
         num_wq_params=len(WATER_QUALITY_PARAMS),
         predict_steps=predict_steps,
         num_bloom_classes=4,
+        temporal_layers=train_args.get("temporal_layers", 4),
+        spatial_layers=train_args.get("spatial_layers", 4),
+        ff_dim=train_args.get("ff_dim", 512),
         dropout=0.0
     )
     model.load_state_dict(checkpoint["model_state_dict"])
@@ -52,10 +55,10 @@ def export_to_onnx(checkpoint_path, output_path, graph_dir="data/graph",
     batch_size = 1
     sample_x = torch.randn(batch_size, num_nodes, history_steps, FEATURE_DIM)
 
-    # 测试前向传播
+    # 测试前向传播 (V2: 3 输出)
     with torch.no_grad():
-        wq_out, bloom_out = model(sample_x, edge_index, edge_weight)
-        logger.info(f"前向测试: wq={wq_out.shape}, bloom={bloom_out.shape}")
+        wq_out, wq_log_var, bloom_out = model(sample_x, edge_index, edge_weight)
+        logger.info(f"前向测试: wq={wq_out.shape}, uncertainty={wq_log_var.shape}, bloom={bloom_out.shape}")
 
     # 包装模型（将 edge_index/edge_weight 固化到模型内部）
     class ONNXWrapper(torch.nn.Module):
@@ -82,10 +85,11 @@ def export_to_onnx(checkpoint_path, output_path, graph_dir="data/graph",
         str(output_path),
         opset_version=opset_version,
         input_names=["node_features"],
-        output_names=["water_quality_pred", "algal_bloom_risk"],
+        output_names=["water_quality_pred", "water_quality_uncertainty", "algal_bloom_risk"],
         dynamic_axes={
             "node_features": {0: "batch_size"},
             "water_quality_pred": {0: "batch_size"},
+            "water_quality_uncertainty": {0: "batch_size"},
             "algal_bloom_risk": {0: "batch_size"}
         }
     )
@@ -107,20 +111,20 @@ def export_to_onnx(checkpoint_path, output_path, graph_dir="data/graph",
         session = ort.InferenceSession(str(output_path))
         ort_inputs = {"node_features": sample_x.numpy()}
         ort_outputs = session.run(None, ort_inputs)
-        logger.info(f"ONNX 推理测试: wq={ort_outputs[0].shape}, bloom={ort_outputs[1].shape}")
+        logger.info(f"ONNX 推理测试: wq={ort_outputs[0].shape}, "
+                     f"uncertainty={ort_outputs[1].shape}, bloom={ort_outputs[2].shape}")
 
         # 比较精度
         wq_diff = np.abs(ort_outputs[0] - wq_out.numpy()).max()
-        bloom_diff = np.abs(ort_outputs[1] - bloom_out.numpy()).max()
-        logger.info(f"精度对比: wq max_diff={wq_diff:.6f}, bloom max_diff={bloom_diff:.6f}")
+        var_diff = np.abs(ort_outputs[1] - wq_log_var.numpy()).max()
+        bloom_diff = np.abs(ort_outputs[2] - bloom_out.numpy()).max()
+        logger.info(f"精度对比: wq={wq_diff:.6f}, var={var_diff:.6f}, bloom={bloom_diff:.6f}")
     except ImportError:
         logger.warning("未安装 onnxruntime，跳过推理测试")
 
     # 文件大小
     size_mb = output_path.stat().st_size / 1e6
     logger.info(f"ONNX 模型大小: {size_mb:.1f} MB")
-    if size_mb > 20:
-        logger.warning(f"模型超过 20MB 目标! ({size_mb:.1f} MB)")
 
     logger.info(f"导出完成: {output_path}")
 

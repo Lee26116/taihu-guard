@@ -11,26 +11,28 @@ from loguru import logger
 from scipy.spatial.distance import cdist
 
 
-# 水质参数列表
+# 水质参数列表 (11维)
 WATER_QUALITY_PARAMS = [
     "water_temp", "ph", "do", "conductivity", "turbidity",
     "codmn", "nh3n", "tp", "tn", "chla", "algae_density"
 ]
 
-# 气象参数列表
+# V2: 气象参数列表 (15维)
 WEATHER_PARAMS = [
-    "temperature", "precipitation", "wind_speed", "humidity",
-    "pressure", "solar_radiation", "cloud"
+    "temperature", "humidity", "dewpoint", "precipitation", "rain",
+    "wind_speed", "wind_direction", "wind_gusts",
+    "solar_radiation", "direct_radiation", "diffuse_radiation",
+    "pressure", "cloud_cover", "evapotranspiration", "soil_temperature"
 ]
 
-# 遥感参数列表
+# 遥感参数列表 (3维)
 REMOTE_SENSING_PARAMS = ["ndci", "fai", "lst"]
 
-# 时间编码维度
-TIME_ENCODING_DIM = 4  # hour_sin, hour_cos, month_sin, month_cos
+# V2: 时间编码维度 (6维: hour, day_of_year, month 各 sin/cos)
+TIME_ENCODING_DIM = 6
 
-# 总特征维度
-FEATURE_DIM = len(WATER_QUALITY_PARAMS) + len(WEATHER_PARAMS) + TIME_ENCODING_DIM + len(REMOTE_SENSING_PARAMS)  # 11+7+4+3=25
+# V2 总特征维度: 11 + 15 + 6 + 3 = 35
+FEATURE_DIM = len(WATER_QUALITY_PARAMS) + len(WEATHER_PARAMS) + TIME_ENCODING_DIM + len(REMOTE_SENSING_PARAMS)
 
 # 距离阈值 (km)，超过此距离的站点不连边
 DISTANCE_THRESHOLD = 50.0

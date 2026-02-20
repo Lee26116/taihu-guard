@@ -30,14 +30,16 @@ class TaihuDataset(Dataset):
     """
 
     def __init__(self, data_dir="data", graph_dir="data/graph",
-                 history_steps=18, predict_steps=7,
+                 history_steps=42, predict_steps=14,
                  start_date=None, end_date=None, mode="train"):
         """
+        V2 数据集
+
         Args:
             data_dir: 数据根目录
             graph_dir: 图结构目录
-            history_steps: 历史时间步数 (18 = 3天 × 每天6个4小时间隔)
-            predict_steps: 预测步数 (7 = 未来7天，每天取一个值)
+            history_steps: 历史时间步数 (42 = 7天 × 每天6个4小时间隔)
+            predict_steps: 预测步数 (14 = 未来14天，每天取一个值)
             start_date: 数据起始日期
             end_date: 数据结束日期
             mode: 'train' / 'val' / 'test'
@@ -153,7 +155,7 @@ class TaihuDataset(Dataset):
     def _generate_synthetic_wq(self, start_date, end_date):
         """生成合成水质数据（开发测试用）"""
         logger.info("生成合成水质数据用于测试...")
-        start = pd.Timestamp(start_date or "2021-06-01")
+        start = pd.Timestamp(start_date or "2016-01-01")
         end = pd.Timestamp(end_date or "2025-12-31")
         times = pd.date_range(start, end, freq="4h")
 
@@ -187,9 +189,9 @@ class TaihuDataset(Dataset):
         return pd.DataFrame(records)
 
     def _generate_synthetic_weather(self, start_date, end_date):
-        """生成合成气象数据（开发测试用）"""
-        logger.info("生成合成气象数据用于测试...")
-        start = pd.Timestamp(start_date or "2021-06-01")
+        """V2 生成合成气象数据（开发测试用, 15个参数）"""
+        logger.info("生成 V2 合成气象数据用于测试...")
+        start = pd.Timestamp(start_date or "2016-01-01")
         end = pd.Timestamp(end_date or "2025-12-31")
         times = pd.date_range(start, end, freq="1h")
 
@@ -199,16 +201,27 @@ class TaihuDataset(Dataset):
         for t in times:
             month = t.month
             season_factor = np.sin((month - 3) * np.pi / 6)
+            temp = 15 + 15 * season_factor + rng.normal(0, 3)
+            humidity = max(min(65 + 15 * season_factor + rng.normal(0, 10), 100), 0)
+            solar = max(200 + 300 * season_factor + rng.normal(0, 50), 0)
 
             record = {
                 "time": t,
-                "temperature": 15 + 15 * season_factor + rng.normal(0, 3),
-                "humidity": 65 + 15 * season_factor + rng.normal(0, 10),
+                "temperature": temp,
+                "humidity": humidity,
+                "dewpoint": temp - (100 - humidity) / 5.0 + rng.normal(0, 1),
                 "precipitation": max(rng.exponential(1.0) * (0.5 + 0.5 * season_factor), 0),
+                "rain": max(rng.exponential(0.5) * (0.5 + 0.5 * season_factor), 0),
                 "wind_speed": 3.0 + rng.exponential(2.0),
                 "wind_direction": rng.uniform(0, 360),
-                "solar_radiation": max(200 + 300 * season_factor + rng.normal(0, 50), 0),
+                "wind_gusts": 5.0 + rng.exponential(4.0),
+                "solar_radiation": solar,
+                "direct_radiation": solar * 0.6 + rng.normal(0, 20),
+                "diffuse_radiation": solar * 0.4 + rng.normal(0, 15),
                 "pressure": 1013 + rng.normal(0, 5),
+                "cloud_cover": max(min(50 + 20 * season_factor + rng.normal(0, 20), 100), 0),
+                "evapotranspiration": max(0.1 + 0.3 * max(season_factor, 0) + rng.normal(0, 0.05), 0),
+                "soil_temperature": temp - 2 + rng.normal(0, 1),
                 "location_name": "太湖中心"
             }
             records.append(record)
@@ -270,12 +283,15 @@ class TaihuDataset(Dataset):
         return value
 
     def _time_encoding(self, timestamp):
-        """计算时间编码 [hour_sin, hour_cos, month_sin, month_cos]"""
+        """V2 时间编码 [hour_sin, hour_cos, day_of_year_sin, day_of_year_cos, month_sin, month_cos]"""
         hour = timestamp.hour
+        day_of_year = timestamp.timetuple().tm_yday
         month = timestamp.month
         return [
             np.sin(2 * np.pi * hour / 24),
             np.cos(2 * np.pi * hour / 24),
+            np.sin(2 * np.pi * day_of_year / 365),
+            np.cos(2 * np.pi * day_of_year / 365),
             np.sin(2 * np.pi * month / 12),
             np.cos(2 * np.pi * month / 12),
         ]
@@ -304,7 +320,7 @@ class TaihuDataset(Dataset):
             else:
                 features.append(0.0)
 
-        # 2. 气象参数 (7维)
+        # 2. V2 气象参数 (15维)
         if self.weather_data is not None and "time" in self.weather_data.columns:
             wx_mask = (self.weather_data["time"] >= time_step - timedelta(hours=1)) & \
                       (self.weather_data["time"] <= time_step + timedelta(hours=1))
@@ -319,7 +335,7 @@ class TaihuDataset(Dataset):
             else:
                 features.append(0.0)
 
-        # 3. 时间编码 (4维)
+        # 3. V2 时间编码 (6维)
         features.extend(self._time_encoding(time_step))
 
         # 4. 遥感特征 (3维)

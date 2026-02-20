@@ -158,38 +158,36 @@ class MultiHeadGAT(nn.Module):
 
 class SpatialGATBlock(nn.Module):
     """
-    空间 GAT 模块: 2 层 Multi-Head GAT
+    V2 空间 GAT 模块: N 层 Multi-Head GAT (默认 4 层)
+    支持可配置深度
     """
 
-    def __init__(self, in_features=64, hidden_dim=64, out_features=64,
-                 num_heads=4, dropout=0.1):
+    def __init__(self, in_features=256, hidden_dim=256, out_features=256,
+                 num_heads=8, num_layers=4, dropout=0.1):
         super().__init__()
 
-        self.gat1 = MultiHeadGAT(
-            in_features=in_features,
-            out_features=hidden_dim,
-            num_heads=num_heads,
-            dropout=dropout,
-            concat=True,
-            residual=True
-        )
+        self.layers = nn.ModuleList()
 
-        self.gat2 = MultiHeadGAT(
-            in_features=hidden_dim,
-            out_features=out_features,
-            num_heads=num_heads,
-            dropout=dropout,
-            concat=True,
-            residual=True
-        )
+        for i in range(num_layers):
+            in_f = in_features if i == 0 else hidden_dim
+            out_f = out_features if i == num_layers - 1 else hidden_dim
+
+            self.layers.append(MultiHeadGAT(
+                in_features=in_f,
+                out_features=out_f,
+                num_heads=num_heads,
+                dropout=dropout,
+                concat=True,
+                residual=True
+            ))
 
     def forward(self, h, edge_index, edge_weight=None):
         """
-        2 层 GAT
+        N 层 GAT
 
         Input: (N, in_features)
         Output: (N, out_features)
         """
-        h = self.gat1(h, edge_index, edge_weight)
-        h = self.gat2(h, edge_index, edge_weight)
+        for layer in self.layers:
+            h = layer(h, edge_index, edge_weight)
         return h

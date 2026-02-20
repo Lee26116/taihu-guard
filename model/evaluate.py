@@ -37,7 +37,7 @@ def evaluate_model(model, loader, edge_index, edge_weight, device):
             y_wq = batch["y_wq"].to(device)
             y_bloom = batch["y_bloom"].to(device)
 
-            wq_pred, bloom_pred = model(x, edge_index, edge_weight)
+            wq_pred, wq_log_var, bloom_pred = model(x, edge_index, edge_weight)
 
             all_wq_preds.append(wq_pred.cpu().numpy())
             all_wq_targets.append(y_wq.cpu().numpy())
@@ -160,15 +160,18 @@ def main():
         collate_fn=collate_fn
     )
 
-    # 模型
+    # V2 模型
     model = STGAT(
         input_dim=FEATURE_DIM,
-        hidden_dim=train_args.get("hidden_dim", 64),
-        num_heads=train_args.get("num_heads", 4),
+        hidden_dim=train_args.get("hidden_dim", 256),
+        num_heads=train_args.get("num_heads", 8),
         num_wq_params=len(WATER_QUALITY_PARAMS),
-        predict_steps=train_args.get("predict_steps", 7),
+        predict_steps=train_args.get("predict_steps", 14),
         num_bloom_classes=4,
-        dropout=0.0  # 评估时关闭 dropout
+        temporal_layers=train_args.get("temporal_layers", 4),
+        spatial_layers=train_args.get("spatial_layers", 4),
+        ff_dim=train_args.get("ff_dim", 512),
+        dropout=0.0
     ).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
 

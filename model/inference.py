@@ -24,8 +24,8 @@ class TaihuInference:
                  stations_path="data/stations.json",
                  data_dir="data",
                  graph_dir="data/graph",
-                 history_steps=18,
-                 predict_steps=7):
+                 history_steps=42,
+                 predict_steps=14):
 
         self.model_path = Path(model_path)
         self.data_dir = Path(data_dir)
@@ -144,25 +144,36 @@ class TaihuInference:
                                 break
                     features.append(val)
 
-                # 气象参数 (7维)
+                # V2 气象参数 (15维)
                 wx = weather_data.get("太湖中心", {})
                 realtime = wx.get("realtime", {})
                 wx_values = {
                     "temperature": realtime.get("temp", 0),
-                    "precipitation": realtime.get("precip", 0),
-                    "wind_speed": realtime.get("wind_speed", 0),
                     "humidity": realtime.get("humidity", 0),
+                    "dewpoint": realtime.get("dewpoint", 0),
+                    "precipitation": realtime.get("precip", 0),
+                    "rain": realtime.get("rain", 0),
+                    "wind_speed": realtime.get("wind_speed", 0),
+                    "wind_direction": realtime.get("wind_direction", 0),
+                    "wind_gusts": realtime.get("wind_gusts", 0),
+                    "solar_radiation": 0,
+                    "direct_radiation": 0,
+                    "diffuse_radiation": 0,
                     "pressure": realtime.get("pressure", 0),
-                    "solar_radiation": 0,  # 实时数据无此字段
-                    "cloud": realtime.get("cloud", 0),
+                    "cloud_cover": realtime.get("cloud", 0),
+                    "evapotranspiration": 0,
+                    "soil_temperature": 0,
                 }
                 for param in WEATHER_PARAMS:
                     features.append(float(wx_values.get(param, 0) or 0))
 
-                # 时间编码 (4维)
+                # V2 时间编码 (6维: hour, day_of_year, month 各 sin/cos)
+                day_of_year = t.timetuple().tm_yday
                 features.extend([
                     np.sin(2 * np.pi * t.hour / 24),
                     np.cos(2 * np.pi * t.hour / 24),
+                    np.sin(2 * np.pi * day_of_year / 365),
+                    np.cos(2 * np.pi * day_of_year / 365),
                     np.sin(2 * np.pi * t.month / 12),
                     np.cos(2 * np.pi * t.month / 12),
                 ])
@@ -229,11 +240,12 @@ class TaihuInference:
         # 构建输入
         x = self._build_input_tensor(water_data, weather_data)
 
-        # ONNX 推理
+        # V2 ONNX 推理 (3 输出: 预测值, 不确定性, 蓝藻分类)
         try:
             outputs = self.session.run(None, {"node_features": x})
-            wq_pred = outputs[0]    # (1, N, P, 11)
-            bloom_pred = outputs[1]  # (1, N, 4)
+            wq_pred = outputs[0]      # (1, N, P, 11) 水质预测均值
+            wq_log_var = outputs[1]   # (1, N, P, 11) 不确定性 (log variance)
+            bloom_pred = outputs[2]    # (1, N, 4) 蓝藻分类 logits
         except Exception as e:
             logger.error(f"推理执行失败: {e}")
             return None
@@ -272,16 +284,21 @@ class TaihuInference:
                 "color": level_color
             }
 
-            # 预测值
+            # V2 预测值（含不确定性）
             predictions = []
             for step in range(self.predict_steps):
                 day_pred = {}
+                day_uncertainty = {}
                 for p_idx, param in enumerate(WATER_QUALITY_PARAMS):
                     val = float(wq_pred[0, n_idx, step, p_idx])
                     day_pred[param] = round(self._denormalize(val, param), 4)
+                    # 不确定性 = exp(log_var) 的标准差
+                    uncertainty = float(np.sqrt(np.exp(wq_log_var[0, n_idx, step, p_idx])))
+                    day_uncertainty[param] = round(uncertainty, 4)
                 predictions.append({
                     "date": (now + timedelta(days=step + 1)).strftime("%Y-%m-%d"),
-                    "values": day_pred
+                    "values": day_pred,
+                    "uncertainty": day_uncertainty
                 })
             station_result["predictions"] = predictions
 
