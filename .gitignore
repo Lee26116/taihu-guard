@@ -1,0 +1,54 @@
+# 环境变量
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+eggs/
+*.egg
+
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# 数据文件 (太大不提交)
+data/raw/
+data/processed/
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# 模型权重 (用 git lfs 或手动管理)
+weights/*.pt
+weights/*.onnx
+weights/*.pth
+!weights/.gitkeep
+
+# 日志
+logs/*.log
+!logs/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Selenium
+chromedriver
+geckodriver
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node (如果有)
+node_modules/

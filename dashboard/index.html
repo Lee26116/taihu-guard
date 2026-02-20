@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaihuGuard — 太湖水质智能预警系统</title>
+
+    <!-- Mapbox GL JS -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                <h1>TaihuGuard</h1>
+                <span class="subtitle">太湖水质智能预警系统</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="status-indicator" id="statusIndicator">
+                <span class="status-dot"></span>
+                <span class="status-text">实时</span>
+            </div>
+            <div class="update-time" id="updateTime">
+                更新时间: --
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+        <!-- 上半部: 地图 + 预警面板 + 指标卡片 -->
+        <div class="top-section">
+            <!-- 地图区域 -->
+            <div class="map-container">
+                <div id="map" class="map"></div>
+                <!-- 地图图例 -->
+                <div class="map-legend">
+                    <div class="legend-title">水质等级</div>
+                    <div class="legend-items">
+                        <div class="legend-item"><span class="legend-color" style="background:#22c55e"></span>I类</div>
+                        <div class="legend-item"><span class="legend-color" style="background:#84cc16"></span>II类</div>
+                        <div class="legend-item"><span class="legend-color" style="background:#eab308"></span>III类</div>
+                        <div class="legend-item"><span class="legend-color" style="background:#f97316"></span>IV类</div>
+                        <div class="legend-item"><span class="legend-color" style="background:#ef4444"></span>V类</div>
+                        <div class="legend-item"><span class="legend-color" style="background:#991b1b"></span>劣V</div>
+                    </div>
+                </div>
+                <!-- 地图参数选择 -->
+                <div class="map-controls">
+                    <select id="mapParamSelect" class="param-select">
+                        <option value="chla">叶绿素a (Chl-a)</option>
+                        <option value="do">溶解氧 (DO)</option>
+                        <option value="tp">总磷 (TP)</option>
+                        <option value="tn">总氮 (TN)</option>
+                        <option value="nh3n">氨氮 (NH3-N)</option>
+                        <option value="algae_density">藻密度</option>
+                        <option value="water_temp">水温</option>
+                        <option value="ph">pH</option>
+                        <option value="codmn">高锰酸盐指数</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 右侧面板 -->
+            <div class="side-panel">
+                <!-- 预警面板 -->
+                <div class="panel alert-panel">
+                    <div class="panel-header">
+                        <h2>蓝藻预警</h2>
+                        <span class="badge" id="alertCount">0</span>
+                    </div>
+                    <div class="alert-list" id="alertList">
+                        <div class="loading-placeholder">加载中...</div>
+                    </div>
+                </div>
+
+                <!-- 关键指标卡片 -->
+                <div class="metrics-cards">
+                    <div class="metric-card" id="metricChla">
+                        <div class="metric-label">Chl-a (μg/L)</div>
+                        <div class="metric-value">--</div>
+                        <div class="metric-trend">--</div>
+                    </div>
+                    <div class="metric-card" id="metricDO">
+                        <div class="metric-label">DO (mg/L)</div>
+                        <div class="metric-value">--</div>
+                        <div class="metric-trend">--</div>
+                    </div>
+                    <div class="metric-card" id="metricTP">
+                        <div class="metric-label">TP (mg/L)</div>
+                        <div class="metric-value">--</div>
+                        <div class="metric-trend">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中部: 时间序列面板 -->
+        <div class="middle-section">
+            <div class="panel chart-panel">
+                <div class="panel-header">
+                    <h2>水质趋势</h2>
+                    <div class="chart-controls">
+                        <select id="chartStationSelect" class="param-select">
+                            <option value="">选择站点</option>
+                        </select>
+                        <div class="param-tabs" id="paramTabs">
+                            <button class="param-tab active" data-param="chla">Chl-a</button>
+                            <button class="param-tab" data-param="do">DO</button>
+                            <button class="param-tab" data-param="tp">TP</button>
+                            <button class="param-tab" data-param="tn">TN</button>
+                            <button class="param-tab" data-param="nh3n">NH3-N</button>
+                            <button class="param-tab" data-param="algae_density">藻密度</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="timeSeriesChart" class="chart-container"></div>
+            </div>
+        </div>
+
+        <!-- 下部: 模型解释面板 -->
+        <div class="bottom-section">
+            <div class="panel model-panel">
+                <div class="panel-header">
+                    <h2>模型解释</h2>
+                </div>
+                <div class="model-content">
+                    <div id="featureImportanceChart" class="chart-half"></div>
+                    <div class="model-metrics" id="modelMetrics">
+                        <h3>模型性能</h3>
+                        <div class="metric-row">
+                            <span>MAE (Chl-a)</span>
+                            <span class="metric-val" id="maeChla">--</span>
+                        </div>
+                        <div class="metric-row">
+                            <span>R² (Chl-a)</span>
+                            <span class="metric-val" id="r2Chla">--</span>
+                        </div>
+                        <div class="metric-row">
+                            <span>蓝藻预警 F1</span>
+                            <span class="metric-val" id="f1Bloom">--</span>
+                        </div>
+                        <div class="metric-row">
+                            <span>蓝藻预警 AUC</span>
+                            <span class="metric-val" id="aucBloom">--</span>
+                        </div>
+                        <div class="metric-row">
+                            <span>预警准确率</span>
+                            <span class="metric-val" id="accBloom">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 站点详情弹窗 -->
+    <div class="modal-overlay" id="stationModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalStationName">站点详情</h2>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modalContent">
+                    <div class="loading-placeholder">加载中...</div>
+                </div>
+                <div id="modalChart" class="modal-chart"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 脚本 -->
+    <script src="js/app.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/timeline.js"></script>
+    <script src="js/alerts.js"></script>
+</body>
+</html>

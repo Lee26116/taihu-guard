@@ -1,0 +1,22 @@
+[Unit]
+Description=TaihuGuard Water Quality API Service
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/taihu-guard
+Environment="PATH=/path/to/taihu-guard/venv/bin:/usr/bin"
+ExecStart=/path/to/taihu-guard/venv/bin/python -m uvicorn api.main:app --host 0.0.0.0 --port 8087 --workers 2
+Restart=always
+RestartSec=5
+StandardOutput=append:/path/to/taihu-guard/logs/api.log
+StandardError=append:/path/to/taihu-guard/logs/api_error.log
+
+# 资源限制
+MemoryMax=512M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target

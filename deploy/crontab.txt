@@ -1,0 +1,9 @@
+# TaihuGuard 定时任务
+# 安装方式: crontab deploy/crontab.txt
+# 或追加: crontab -l | cat - deploy/crontab.txt | crontab -
+
+# 每4小时运行: 爬取水质数据 + 获取气象数据 + 模型推理
+0 0,4,8,12,16,20 * * * cd /path/to/taihu-guard && /path/to/venv/bin/python scraper/scheduler.py >> logs/cron.log 2>&1
+
+# 每天凌晨清理7天前的日志
+0 2 * * * find /path/to/taihu-guard/logs -name "*.log" -mtime +7 -delete
