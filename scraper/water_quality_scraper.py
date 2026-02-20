@@ -13,11 +13,11 @@ from pathlib import Path
 from loguru import logger
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
+# Service import removed — using Selenium 4.6+ built-in driver management
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
-from webdriver_manager.chrome import ChromeDriverManager
+# Selenium 4.6+ 内置驱动管理，不再需要 webdriver-manager
 
 # 水质参数列名映射
 PARAM_COLUMNS = [
@@ -68,8 +68,7 @@ class WaterQualityScraper:
         )
 
         try:
-            service = Service(ChromeDriverManager().install())
-            self.driver = webdriver.Chrome(service=service, options=options)
+            self.driver = webdriver.Chrome(options=options)
             self.driver.set_page_load_timeout(60)
             logger.info("Chrome 驱动初始化成功")
         except Exception as e:
