@@ -1,7 +1,7 @@
 """
 水质监测数据爬虫
 从生态环境部地表水水质自动监测实时数据发布系统爬取太湖流域水质数据
-URL: http://106.37.208.243:8068/GJZ/Business/Publish/Main.html
+URL: https://szzdjc.cnemc.cn:8070/GJZ/Business/Publish/Main.html
 """
 
 import json
@@ -40,7 +40,7 @@ PARAM_CN = {
     "algae_density": "藻密度"
 }
 
-BASE_URL = "http://106.37.208.243:8068/GJZ/Business/Publish/Main.html"
+BASE_URL = "https://szzdjc.cnemc.cn:8070/GJZ/Business/Publish/Main.html"
 MAX_RETRIES = 3
 RETRY_DELAY = 10  # 秒
 
@@ -56,12 +56,13 @@ class WaterQualityScraper:
     def _init_driver(self):
         """初始化 Selenium Chrome 驱动"""
         options = Options()
-        options.add_argument("--headless")
+        options.add_argument("--headless=new")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-gpu")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--lang=zh-CN")
+        options.add_argument("--ignore-certificate-errors")
         options.add_argument(
             "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
