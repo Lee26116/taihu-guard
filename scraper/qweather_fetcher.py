@@ -17,7 +17,8 @@ from loguru import logger
 load_dotenv()
 
 API_KEY = os.getenv("QWEATHER_API_KEY", "")
-BASE_URL = "https://devapi.qweather.com/v7"
+QWEATHER_HOST = os.getenv("QWEATHER_HOST", "kc44ua927w.re.qweatherapi.com")
+BASE_URL = f"https://{QWEATHER_HOST}/v7"
 
 # 太湖流域气象站点
 WEATHER_STATIONS = [
