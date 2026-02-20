@@ -66,10 +66,15 @@ async function loadLatestData() {
                 `更新: ${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
         }
 
-        // Demo 标识
+        // 数据来源标识
+        const indicator = document.getElementById('statusIndicator');
+        const statusText = document.querySelector('.status-text');
         if (data.demo) {
-            const statusText = document.querySelector('.status-text');
-            if (statusText) statusText.textContent = 'Demo';
+            if (statusText) statusText.textContent = '演示数据';
+            if (indicator) indicator.classList.add('demo-mode');
+        } else {
+            if (statusText) statusText.textContent = '模型推理';
+            if (indicator) indicator.classList.remove('demo-mode');
         }
     }
     return data;
@@ -83,13 +88,56 @@ async function loadModelMetrics() {
     return data;
 }
 
+// ==================== Stats Bar ====================
+function updateStatsBar() {
+    if (!AppState.stations.length) return;
+
+    const setStatVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (typeof animateValue === 'function') {
+                const target = typeof val === 'number' ? val : parseFloat(val);
+                if (!isNaN(target)) {
+                    animateValue(el, 0, target, 800, val === Math.round(val) ? 0 : 1);
+                    return;
+                }
+            }
+            el.textContent = val;
+        }
+    };
+
+    setStatVal('statStations', AppState.stations.length);
+
+    // 预警数
+    const alertCount = (AppState.alerts || []).length ||
+        AppState.stations.filter(s => s.bloom_warning && s.bloom_warning.level >= 1).length;
+    setStatVal('statAlerts', alertCount);
+
+    // 平均水温
+    const temps = AppState.stations.map(s => s.current?.water_temp).filter(v => v != null);
+    if (temps.length) {
+        setStatVal('statWaterTemp', (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(1));
+    }
+
+    // 平均 Chl-a
+    const chlas = AppState.stations.map(s => s.current?.chla).filter(v => v != null);
+    if (chlas.length) {
+        setStatVal('statChla', (chlas.reduce((a, b) => a + b, 0) / chlas.length).toFixed(1));
+    }
+
+    // 平均 DO
+    const dos = AppState.stations.map(s => s.current?.do).filter(v => v != null);
+    if (dos.length) {
+        setStatVal('statDO', (dos.reduce((a, b) => a + b, 0) / dos.length).toFixed(1));
+    }
+}
+
 // ==================== UI 更新 ====================
 function updateMetricCards() {
     if (!AppState.stations.length) return;
 
-    // 计算所有站点的均值
-    const params = ['chla', 'do', 'tp'];
-    const ids = ['metricChla', 'metricDO', 'metricTP'];
+    const params = ['chla', 'do', 'tp', 'tn', 'algae_density'];
+    const ids = ['metricChla', 'metricDO', 'metricTP', 'metricTN', 'metricAlgae'];
 
     params.forEach((param, i) => {
         const values = AppState.stations
@@ -103,8 +151,14 @@ function updateMetricCards() {
         const card = document.getElementById(ids[i]);
         if (!card) return;
 
-        card.querySelector('.metric-value').textContent =
-            avg.toFixed(config.decimals);
+        const valEl = card.querySelector('.metric-value');
+        const targetVal = parseFloat(avg.toFixed(config.decimals));
+
+        if (typeof animateValue === 'function') {
+            animateValue(valEl, 0, targetVal, 1000, config.decimals);
+        } else {
+            valEl.textContent = avg.toFixed(config.decimals);
+        }
 
         // 趋势: 对比预测值
         const futureValues = AppState.stations
@@ -115,6 +169,7 @@ function updateMetricCards() {
             const futureAvg = futureValues.reduce((a, b) => a + b, 0) / futureValues.length;
             const change = ((futureAvg - avg) / Math.max(Math.abs(avg), 0.001)) * 100;
             const trendEl = card.querySelector('.metric-trend');
+            if (!trendEl) return;
 
             if (Math.abs(change) < 1) {
                 trendEl.textContent = '→ 持平';
@@ -137,18 +192,40 @@ function updateModelMetricsUI() {
     const wq = m.water_quality || {};
     const bloom = m.bloom_warning || {};
 
-    const setVal = (id, val) => {
+    const setValWithBar = (id, rowId, val, maxVal) => {
         const el = document.getElementById(id);
         if (el && val !== undefined && val !== null) {
+            const numVal = typeof val === 'number' ? val : parseFloat(val);
             el.textContent = typeof val === 'number' ? val.toFixed(val < 1 ? 4 : 2) : val;
+
+            // Add progress bar if row exists
+            const row = document.getElementById(rowId);
+            if (row && !row.querySelector('.metric-progress')) {
+                const barHtml = `<div class="metric-progress"><div class="metric-progress-fill" style="width: 0%"></div></div>`;
+                row.insertAdjacentHTML('beforeend', barHtml);
+                // Animate bar after a brief delay
+                requestAnimationFrame(() => {
+                    const fill = row.querySelector('.metric-progress-fill');
+                    if (fill) {
+                        const pct = Math.min((numVal / maxVal) * 100, 100);
+                        fill.style.width = `${pct}%`;
+                    }
+                });
+            }
         }
     };
 
-    setVal('maeChla', wq.chla?.mae);
-    setVal('r2Chla', wq.chla?.r2);
-    setVal('f1Bloom', bloom.f1_macro);
-    setVal('aucBloom', bloom.auc_roc);
-    setVal('accBloom', bloom.accuracy);
+    // MAE: lower is better, invert for bar (show as quality score)
+    const maeVal = wq.chla?.mae;
+    if (maeVal !== undefined) {
+        const el = document.getElementById('maeChla');
+        if (el) el.textContent = maeVal.toFixed(maeVal < 1 ? 4 : 2);
+    }
+
+    setValWithBar('r2Chla', 'rowR2Chla', wq.chla?.r2, 1.0);
+    setValWithBar('f1Bloom', 'rowF1Bloom', bloom.f1_macro, 1.0);
+    setValWithBar('aucBloom', 'rowAucBloom', bloom.auc_roc, 1.0);
+    setValWithBar('accBloom', 'rowAccBloom', bloom.accuracy, 1.0);
 }
 
 function populateStationSelect() {
@@ -172,6 +249,31 @@ function populateStationSelect() {
         select.value = AppState.stations[0].id;
         AppState.selectedStation = AppState.stations[0].id;
     }
+}
+
+// ==================== About 抽屉面板 ====================
+function initAboutDrawer() {
+    const btn = document.getElementById('aboutBtn');
+    const overlay = document.getElementById('aboutDrawer');
+    const closeBtn = document.getElementById('aboutDrawerClose');
+
+    if (!btn || !overlay) return;
+
+    btn.addEventListener('click', () => {
+        overlay.classList.add('active');
+    });
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            overlay.classList.remove('active');
+        });
+    }
+
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            overlay.classList.remove('active');
+        }
+    });
 }
 
 // ==================== 事件绑定 ====================
@@ -218,6 +320,7 @@ function openStationModal(stationId) {
     const modal = document.getElementById('stationModal');
     const nameEl = document.getElementById('modalStationName');
     const contentEl = document.getElementById('modalContent');
+    if (!modal || !nameEl || !contentEl) return;
 
     nameEl.textContent = `${station.name} - ${station.basin || ''}`;
 
@@ -267,6 +370,7 @@ async function init() {
     console.log('TaihuGuard 初始化...');
 
     bindEvents();
+    initAboutDrawer();
 
     // 加载配置 (Mapbox Token 等)
     const configData = await fetchAPI('/api/config');
@@ -294,6 +398,7 @@ async function init() {
     populateStationSelect();
     updateMetricCards();
     updateModelMetricsUI();
+    updateStatsBar();
 
     // 更新预警列表
     if (typeof updateAlertList === 'function') {
@@ -309,6 +414,19 @@ async function init() {
         updateFeatureImportanceChart();
     }
 
+    // 新增图表
+    if (typeof updateWqDistChart === 'function') {
+        updateWqDistChart();
+    }
+    if (typeof updateStationCompareChart === 'function') {
+        updateStationCompareChart('chla');
+    }
+
+    // 时间轴（数据加载后再初始化，避免竞态）
+    if (typeof Timeline !== 'undefined') {
+        Timeline.init();
+    }
+
     AppState.isLoading = false;
     console.log('TaihuGuard 初始化完成');
 
@@ -317,6 +435,7 @@ async function init() {
         console.log('自动刷新数据...');
         await loadLatestData();
         updateMetricCards();
+        updateStatsBar();
         if (typeof updateMapMarkers === 'function') updateMapMarkers();
         if (typeof updateAlertList === 'function') updateAlertList();
         if (typeof updateTimeSeriesChart === 'function') updateTimeSeriesChart();

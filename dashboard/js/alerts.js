@@ -63,27 +63,41 @@ function updateAlertList() {
 function renderAlertItems(container, alerts) {
     const levelClass = { 3: 'high', 2: 'mid', 1: 'low' };
 
-    let html = '';
+    container.innerHTML = '';
+
     alerts.forEach(alert => {
         const cls = levelClass[alert.level] || 'low';
-        html += `
-            <div class="alert-item" onclick="onAlertClick('${alert.station_id}', ${alert.lon}, ${alert.lat})">
-                <div class="alert-dot" style="background:${alert.color}"></div>
-                <div class="alert-info">
-                    <div class="alert-station">${alert.station_name}</div>
-                    <div class="alert-detail">${alert.basin}</div>
-                </div>
-                <span class="alert-level ${cls}">${alert.label}</span>
-            </div>
-        `;
-    });
 
-    container.innerHTML = html;
+        const el = document.createElement('div');
+        el.className = `alert-item alert-${cls}`;
+
+        el.innerHTML = `
+            <div class="alert-dot" style="background:${alert.color};box-shadow:0 0 6px ${alert.color}"></div>
+            <div class="alert-info">
+                <div class="alert-station">${escapeHtml(alert.station_name || '')}</div>
+                <div class="alert-detail">${escapeHtml(alert.basin || '')}</div>
+            </div>
+            <span class="alert-level ${cls}">${escapeHtml(alert.label || '')}</span>
+        `;
+
+        el.addEventListener('click', () => {
+            onAlertClick(alert.station_id, alert.lon, alert.lat);
+        });
+
+        container.appendChild(el);
+    });
+}
+
+/** 防 XSS 转义 */
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
 }
 
 function onAlertClick(stationId, lon, lat) {
     // 飞行到站点
-    if (typeof flyToStation === 'function') {
+    if (typeof flyToStation === 'function' && lon != null && lat != null) {
         flyToStation(lon, lat);
     }
 

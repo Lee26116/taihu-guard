@@ -25,6 +25,18 @@ function initMap() {
     map.addControl(new mapboxgl.ScaleControl({ unit: 'metric' }), 'bottom-right');
 
     map.on('load', () => {
+        // 中文地图标签
+        const layers = map.getStyle().layers;
+        layers.forEach(layer => {
+            if (layer.type === 'symbol' && layer.layout && layer.layout['text-field']) {
+                map.setLayoutProperty(layer.id, 'text-field', [
+                    'coalesce',
+                    ['get', 'name_zh-Hans'],
+                    ['get', 'name']
+                ]);
+            }
+        });
+
         // 添加太湖轮廓（简化）
         addTaihuOutline();
 

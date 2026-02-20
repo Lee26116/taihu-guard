@@ -90,11 +90,9 @@ const Timeline = {
     onTimeChange(dayOffset) {
         if (!AppState.stations.length) return;
 
-        // dayOffset < 0: 历史（用当前值加微调）
-        // dayOffset === 0: 当前
-        // dayOffset > 0: 用预测数据
         if (dayOffset <= 0) {
-            // 历史/当前 — 恢复原始标记颜色
+            // 历史/当前 — 恢复原始数据和标记颜色
+            this._restoreOriginal();
             if (typeof updateMapMarkers === 'function') {
                 updateMapMarkers();
             }
@@ -102,19 +100,23 @@ const Timeline = {
         }
 
         // 预测模式: 根据预测值更新站点颜色
-        const predIdx = dayOffset - 1; // predictions[0] = +1天
+        const predIdx = dayOffset - 1;
         AppState.stations.forEach(station => {
             const pred = station.predictions?.[predIdx];
             if (!pred) return;
 
-            // 临时用预测值更新 current（仅影响地图显示）
-            station._origCurrent = station._origCurrent || { ...station.current };
+            // 备份原始数据（首次进入预测模式时）
+            if (!station._origCurrent) {
+                station._origCurrent = { ...station.current };
+                station._origWqLevel = { ...station.water_quality_level };
+            }
+
             station.current = { ...station._origCurrent, ...pred.values };
 
             // 重新计算水质等级
-            const codmn = pred.values?.codmn || 0;
-            const nh3n = pred.values?.nh3n || 0;
-            const tp = pred.values?.tp || 0;
+            const codmn = pred.values?.codmn || station._origCurrent.codmn || 0;
+            const nh3n = pred.values?.nh3n || station._origCurrent.nh3n || 0;
+            const tp = pred.values?.tp || station._origCurrent.tp || 0;
             if (codmn <= 2 && nh3n <= 0.15 && tp <= 0.02) {
                 station.water_quality_level = { level: 1, name: 'I类', color: '#22c55e' };
             } else if (codmn <= 4 && nh3n <= 0.5 && tp <= 0.1) {
@@ -135,6 +137,20 @@ const Timeline = {
         }
     },
 
+    /** 恢复所有站点的原始数据 */
+    _restoreOriginal() {
+        AppState.stations.forEach(station => {
+            if (station._origCurrent) {
+                station.current = station._origCurrent;
+                delete station._origCurrent;
+            }
+            if (station._origWqLevel) {
+                station.water_quality_level = station._origWqLevel;
+                delete station._origWqLevel;
+            }
+        });
+    },
+
     togglePlay() {
         if (this.playing) {
             this.stop();
@@ -147,7 +163,6 @@ const Timeline = {
         this.playing = true;
         if (this.playBtn) this.playBtn.innerHTML = '&#9646;&#9646;';
 
-        // 从当前位置向前播放
         if (this.currentStep >= this.totalSteps) {
             this.currentStep = 0;
             this.slider.value = 0;
@@ -172,18 +187,9 @@ const Timeline = {
             this.playTimer = null;
         }
 
-        // 恢复原始数据
-        AppState.stations.forEach(station => {
-            if (station._origCurrent) {
-                station.current = station._origCurrent;
-                delete station._origCurrent;
-            }
-        });
+        // 恢复原始数据（包括 water_quality_level）
+        this._restoreOriginal();
     }
 };
 
-// 在 app.js init 完成后初始化
-document.addEventListener('DOMContentLoaded', () => {
-    // 延迟初始化，确保数据已加载
-    setTimeout(() => Timeline.init(), 2000);
-});
+// 初始化由 app.js 的 init() 末尾调用，不再用 setTimeout

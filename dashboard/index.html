@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TaihuGuard — 太湖水质智能预警系统</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
     <!-- Mapbox GL JS -->
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
@@ -28,6 +31,7 @@
             </div>
         </div>
         <div class="header-right">
+            <button class="about-btn" id="aboutBtn" title="关于系统" aria-label="关于系统">?</button>
             <div class="status-indicator" id="statusIndicator">
                 <span class="status-dot"></span>
                 <span class="status-text">实时</span>
@@ -38,6 +42,43 @@
         </div>
     </header>
 
+    <!-- 统计概览条 -->
+    <div class="stats-bar" id="statsBar">
+        <div class="stat-item">
+            <span class="stat-icon">&#9678;</span>
+            <span class="stat-label">监测站点</span>
+            <span class="stat-value" id="statStations">--</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-icon">&#9888;</span>
+            <span class="stat-label">预警数</span>
+            <span class="stat-value" id="statAlerts">--</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-icon">&#9729;</span>
+            <span class="stat-label">平均水温</span>
+            <span class="stat-value" id="statWaterTemp">--</span>
+            <span class="stat-label">&deg;C</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-icon">&#9733;</span>
+            <span class="stat-label">平均Chl-a</span>
+            <span class="stat-value" id="statChla">--</span>
+            <span class="stat-label">&mu;g/L</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-icon">&#9651;</span>
+            <span class="stat-label">平均DO</span>
+            <span class="stat-value" id="statDO">--</span>
+            <span class="stat-label">mg/L</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-icon">&#8982;</span>
+            <span class="stat-label">预测天数</span>
+            <span class="stat-value">14</span>
+        </div>
+    </div>
+
     <!-- 主内容区 -->
     <main class="main-content">
         <!-- 上半部: 地图 + 预警面板 + 指标卡片 -->
@@ -45,6 +86,10 @@
             <!-- 地图区域 -->
             <div class="map-container">
                 <div id="map" class="map"></div>
+                <!-- HUD 角标装饰 -->
+                <div class="map-hud-corner-tr"></div>
+                <div class="map-hud-corner-bl"></div>
+                <div class="map-hud-corner-br"></div>
                 <!-- 地图图例 -->
                 <div class="map-legend">
                     <div class="legend-title">水质等级</div>
@@ -86,10 +131,10 @@
                     </div>
                 </div>
 
-                <!-- 关键指标卡片 -->
+                <!-- 关键指标卡片 (5个) -->
                 <div class="metrics-cards">
                     <div class="metric-card" id="metricChla">
-                        <div class="metric-label">Chl-a (μg/L)</div>
+                        <div class="metric-label">Chl-a (&mu;g/L)</div>
                         <div class="metric-value">--</div>
                         <div class="metric-trend">--</div>
                     </div>
@@ -100,6 +145,16 @@
                     </div>
                     <div class="metric-card" id="metricTP">
                         <div class="metric-label">TP (mg/L)</div>
+                        <div class="metric-value">--</div>
+                        <div class="metric-trend">--</div>
+                    </div>
+                    <div class="metric-card" id="metricTN">
+                        <div class="metric-label">TN (mg/L)</div>
+                        <div class="metric-value">--</div>
+                        <div class="metric-trend">--</div>
+                    </div>
+                    <div class="metric-card" id="metricAlgae">
+                        <div class="metric-label">藻密度 (万/L)</div>
                         <div class="metric-value">--</div>
                         <div class="metric-trend">--</div>
                     </div>
@@ -123,15 +178,16 @@
                 <div class="timeline-info">
                     <span id="timelineDate">当前</span>
                     <div class="timeline-buttons">
-                        <button class="tl-btn" id="tlPlay" title="播放">&#9654;</button>
-                        <button class="tl-btn" id="tlReset" title="回到当前">&#8634;</button>
+                        <button class="tl-btn" id="tlPlay" title="播放" aria-label="播放">&#9654;</button>
+                        <button class="tl-btn" id="tlReset" title="回到当前" aria-label="回到当前">&#8634;</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 中部: 时间序列面板 -->
+        <!-- 中部: 时间序列 + 右侧分析面板 -->
         <div class="middle-section">
+            <!-- 左: 时间序列图 -->
             <div class="panel chart-panel">
                 <div class="panel-header">
                     <h2>水质趋势</h2>
@@ -151,37 +207,101 @@
                 </div>
                 <div id="timeSeriesChart" class="chart-container"></div>
             </div>
+
+            <!-- 右: 水质分析侧栏 -->
+            <div class="analysis-sidebar">
+                <!-- 水质等级分布 -->
+                <div class="panel mini-panel">
+                    <div class="panel-header">
+                        <h2>水质等级分布</h2>
+                    </div>
+                    <div id="wqDistChart" class="mini-chart-container"></div>
+                </div>
+                <!-- 站点雷达图 -->
+                <div class="panel mini-panel">
+                    <div class="panel-header">
+                        <h2>站点参数画像</h2>
+                    </div>
+                    <div id="radarChart" class="mini-chart-container"></div>
+                </div>
+            </div>
         </div>
 
-        <!-- 下部: 模型解释面板 -->
+        <!-- 下部: 三列 — 参数对比 + 特征重要性 + 模型性能 -->
         <div class="bottom-section">
-            <div class="panel model-panel">
+            <!-- 全湖参数对比 -->
+            <div class="panel bottom-panel">
                 <div class="panel-header">
-                    <h2>模型解释</h2>
+                    <h2>全湖参数对比</h2>
+                    <select id="compareParamSelect" class="param-select param-select-sm">
+                        <option value="chla">Chl-a</option>
+                        <option value="do">DO</option>
+                        <option value="tp">TP</option>
+                        <option value="tn">TN</option>
+                        <option value="nh3n">NH3-N</option>
+                    </select>
                 </div>
-                <div class="model-content">
-                    <div id="featureImportanceChart" class="chart-half"></div>
-                    <div class="model-metrics" id="modelMetrics">
-                        <h3>模型性能</h3>
-                        <div class="metric-row">
+                <div id="stationCompareChart" class="chart-container-sm"></div>
+            </div>
+            <!-- 特征重要性 -->
+            <div class="panel bottom-panel">
+                <div class="panel-header">
+                    <h2>SHAP 特征重要性</h2>
+                </div>
+                <div id="featureImportanceChart" class="chart-container-sm"></div>
+            </div>
+            <!-- 模型性能 -->
+            <div class="panel bottom-panel">
+                <div class="panel-header">
+                    <h2>模型性能</h2>
+                </div>
+                <div class="model-metrics-body" id="modelMetrics">
+                    <div class="metric-row-bar" id="rowMaeChla">
+                        <div class="metric-row-top">
                             <span>MAE (Chl-a)</span>
                             <span class="metric-val" id="maeChla">--</span>
                         </div>
-                        <div class="metric-row">
-                            <span>R² (Chl-a)</span>
+                    </div>
+                    <div class="metric-row-bar" id="rowR2Chla">
+                        <div class="metric-row-top">
+                            <span>R&sup2; (Chl-a)</span>
                             <span class="metric-val" id="r2Chla">--</span>
                         </div>
-                        <div class="metric-row">
+                    </div>
+                    <div class="metric-row-bar" id="rowF1Bloom">
+                        <div class="metric-row-top">
                             <span>蓝藻预警 F1</span>
                             <span class="metric-val" id="f1Bloom">--</span>
                         </div>
-                        <div class="metric-row">
+                    </div>
+                    <div class="metric-row-bar" id="rowAucBloom">
+                        <div class="metric-row-top">
                             <span>蓝藻预警 AUC</span>
                             <span class="metric-val" id="aucBloom">--</span>
                         </div>
-                        <div class="metric-row">
+                    </div>
+                    <div class="metric-row-bar" id="rowAccBloom">
+                        <div class="metric-row-top">
                             <span>预警准确率</span>
                             <span class="metric-val" id="accBloom">--</span>
+                        </div>
+                    </div>
+                    <!-- 模型摘要 -->
+                    <div class="model-summary">
+                        <div class="model-summary-row">
+                            <span>架构</span><span>ST-GAT V2</span>
+                        </div>
+                        <div class="model-summary-row">
+                            <span>参数量</span><span>~8M</span>
+                        </div>
+                        <div class="model-summary-row">
+                            <span>输入窗口</span><span>7天</span>
+                        </div>
+                        <div class="model-summary-row">
+                            <span>预测窗口</span><span>14天</span>
+                        </div>
+                        <div class="model-summary-row">
+                            <span>特征维度</span><span>35维</span>
                         </div>
                     </div>
                 </div>
@@ -189,12 +309,21 @@
         </div>
     </main>
 
+    <!-- 页脚 -->
+    <footer class="dashboard-footer">
+        TaihuGuard v2.0
+        <span class="footer-sep">|</span>
+        数据来源: 江苏省太湖水质自动监测站
+        <span class="footer-sep">|</span>
+        ST-GAT V2 &middot; Temporal Transformer + Spatial GAT
+    </footer>
+
     <!-- 站点详情弹窗 -->
-    <div class="modal-overlay" id="stationModal">
+    <div class="modal-overlay" id="stationModal" role="dialog" aria-modal="true">
         <div class="modal">
             <div class="modal-header">
                 <h2 id="modalStationName">站点详情</h2>
-                <button class="modal-close" id="modalClose">&times;</button>
+                <button class="modal-close" id="modalClose" aria-label="关闭">&times;</button>
             </div>
             <div class="modal-body">
                 <div id="modalContent">
@@ -205,7 +334,109 @@
         </div>
     </div>
 
+    <!-- About 技术说明抽屉 -->
+    <div class="about-drawer-overlay" id="aboutDrawer" role="dialog" aria-modal="true">
+        <div class="about-drawer">
+            <div class="about-drawer-header">
+                <h2>关于 TaihuGuard</h2>
+                <button class="about-drawer-close" id="aboutDrawerClose" aria-label="关闭">&times;</button>
+            </div>
+            <div class="about-drawer-body">
+                <!-- 项目概述 -->
+                <div class="about-section">
+                    <h3>项目概述</h3>
+                    <p>
+                        TaihuGuard 是基于时空图注意力网络 (ST-GAT V2) 的太湖流域水质智能预测与蓝藻预警系统。
+                        系统融合水质自动监测、气象观测和遥感反演数据，实现 11 项水质指标的 14 天逐日预测，
+                        并提供蓝藻水华分级预警，为太湖流域水环境管理提供智能决策支撑。
+                    </p>
+                </div>
+
+                <!-- 数据管线 -->
+                <div class="about-section">
+                    <h3>数据管线</h3>
+                    <div class="pipeline-flow">
+                        <span class="pipeline-node">水质自动监测</span>
+                        <span class="pipeline-arrow">&rarr;</span>
+                        <span class="pipeline-node">气象观测</span>
+                        <span class="pipeline-arrow">&rarr;</span>
+                        <span class="pipeline-node">遥感反演</span>
+                        <span class="pipeline-arrow">&rarr;</span>
+                        <span class="pipeline-node">特征工程</span>
+                        <span class="pipeline-arrow">&rarr;</span>
+                        <span class="pipeline-node">ST-GAT V2</span>
+                        <span class="pipeline-arrow">&rarr;</span>
+                        <span class="pipeline-node">Dashboard</span>
+                    </div>
+                </div>
+
+                <!-- 模型架构 -->
+                <div class="about-section">
+                    <h3>模型架构</h3>
+                    <div class="arch-blocks">
+                        <div class="arch-block">
+                            <div class="arch-name">Temporal Transformer Encoder</div>
+                            <div class="arch-desc">多头自注意力机制捕获时间序列长程依赖，4层 Transformer，d_model=128</div>
+                        </div>
+                        <div class="arch-block">
+                            <div class="arch-name">Spatial GAT (Graph Attention Network)</div>
+                            <div class="arch-desc">深层图注意力网络建模站点间空间相关性，4层 GAT，8头注意力</div>
+                        </div>
+                        <div class="arch-block">
+                            <div class="arch-name">ST Fusion Layer</div>
+                            <div class="arch-desc">时空特征交叉融合，门控机制自适应权重分配</div>
+                        </div>
+                        <div class="arch-block">
+                            <div class="arch-name">双任务预测头</div>
+                            <div class="arch-desc">水质回归头 (14天 &times; 11指标) + 蓝藻分类头 (3级预警) + 不确定性估计</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 关键数据 -->
+                <div class="about-section">
+                    <h3>关键数据</h3>
+                    <div class="key-stats">
+                        <div class="key-stat">
+                            <div class="ks-value">~8M</div>
+                            <div class="ks-label">模型参数量</div>
+                        </div>
+                        <div class="key-stat">
+                            <div class="ks-value">35</div>
+                            <div class="ks-label">输入特征维度</div>
+                        </div>
+                        <div class="key-stat">
+                            <div class="ks-value">14</div>
+                            <div class="ks-label">预测天数</div>
+                        </div>
+                        <div class="key-stat">
+                            <div class="ks-value">11</div>
+                            <div class="ks-label">水质指标数</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 技术栈 -->
+                <div class="about-section">
+                    <h3>技术栈</h3>
+                    <div class="tech-tags">
+                        <span class="tech-tag">PyTorch</span>
+                        <span class="tech-tag">ONNX Runtime</span>
+                        <span class="tech-tag">FastAPI</span>
+                        <span class="tech-tag">Mapbox GL JS</span>
+                        <span class="tech-tag">ECharts</span>
+                        <span class="tech-tag">PyG (GAT)</span>
+                        <span class="tech-tag">Transformer</span>
+                        <span class="tech-tag">SHAP</span>
+                        <span class="tech-tag">RunPod GPU</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 脚本 -->
+    <script src="js/effects.js"></script>
     <script src="js/app.js"></script>
     <script src="js/map.js"></script>
     <script src="js/charts.js"></script>
