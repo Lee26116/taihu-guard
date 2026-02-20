@@ -191,7 +191,7 @@ def main():
     logger.info(f"设备: {device}")
     if device.type == "cuda":
         logger.info(f"GPU: {torch.cuda.get_device_name(0)}")
-        logger.info(f"VRAM: {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB")
+        logger.info(f"VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
         logger.info(f"混合精度: {'启用' if args.fp16 else '关闭'}")
 
     # 图结构
@@ -217,12 +217,12 @@ def main():
 
     train_loader = DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=True,
-        num_workers=args.num_workers, collate_fn=collate_fn,
-        pin_memory=True, persistent_workers=True
+        num_workers=0, collate_fn=collate_fn,
+        pin_memory=True
     )
     val_loader = DataLoader(
         val_dataset, batch_size=args.batch_size, shuffle=False,
-        num_workers=args.num_workers, collate_fn=collate_fn,
+        num_workers=0, collate_fn=collate_fn,
         pin_memory=True
     )
 

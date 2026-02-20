@@ -123,12 +123,14 @@ class STGAT(nn.Module):
         h_temporal = self.temporal_encoder(x_flat)  # (B*N, H)
         h_temporal = h_temporal.reshape(batch_size, num_nodes, self.hidden_dim)
 
-        # 2. Spatial GAT: 对每个 batch 样本独立处理
-        h_spatial_list = []
-        for b in range(batch_size):
-            h_b = self.spatial_gat(h_temporal[b], edge_index, edge_weight)
-            h_spatial_list.append(h_b)
-        h_spatial = torch.stack(h_spatial_list)  # (B, N, H)
+        # 2. Spatial GAT: 批量化处理 (将 batch 维合并到 edge_index)
+        h_flat = h_temporal.reshape(batch_size * num_nodes, self.hidden_dim)
+        # 为每个 batch 复制 edge_index 并偏移节点编号
+        offsets = torch.arange(batch_size, device=x.device).unsqueeze(1) * num_nodes  # (B, 1)
+        batch_edge_index = (edge_index.unsqueeze(0) + offsets.unsqueeze(1)).reshape(2, -1)  # (2, B*E)
+        batch_edge_weight = edge_weight.repeat(batch_size) if edge_weight is not None else None
+        h_spatial = self.spatial_gat(h_flat, batch_edge_index, batch_edge_weight)
+        h_spatial = h_spatial.reshape(batch_size, num_nodes, self.hidden_dim)  # (B, N, H)
 
         # 3. Spatial-Temporal Fusion
         h_fused = self.st_fusion(

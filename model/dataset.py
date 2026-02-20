@@ -1,10 +1,10 @@
 """
-PyTorch Dataset / DataLoader
-将多源数据组装为 ST-GAT 模型输入
+V2 PyTorch Dataset / DataLoader
+预计算所有特征到 numpy 数组，__getitem__ 仅做数组切片，极快
 """
 
 import json
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 
 import numpy as np
@@ -18,71 +18,63 @@ from model.graph_builder import (
     FEATURE_DIM, load_graph
 )
 
+NUM_WQ = len(WATER_QUALITY_PARAMS)
+NUM_WX = len(WEATHER_PARAMS)
+NUM_TIME = 6  # hour sin/cos, day_of_year sin/cos, month sin/cos
+NUM_RS = len(REMOTE_SENSING_PARAMS)
+
 
 class TaihuDataset(Dataset):
     """
-    太湖水质时空图数据集
+    V2 太湖水质时空图数据集 (预计算版)
 
-    每个样本 = (历史时间窗口, 标签):
-      - x: (num_nodes, history_steps, feature_dim)  # 节点特征
-      - y_wq: (num_nodes, predict_steps, 11)          # 水质预测标签
-      - y_bloom: (num_nodes,)                          # 蓝藻风险分类标签
+    初始化时将所有数据预计算为:
+      - feature_tensor: (T, N, F)  全时间步 × 全节点 × 特征
+      - wq_tensor: (T, N, 11)     水质参数原始值 (用于标签)
+
+    __getitem__ 仅做 numpy 切片，速度极快
     """
 
     def __init__(self, data_dir="data", graph_dir="data/graph",
                  history_steps=42, predict_steps=14,
                  start_date=None, end_date=None, mode="train"):
-        """
-        V2 数据集
-
-        Args:
-            data_dir: 数据根目录
-            graph_dir: 图结构目录
-            history_steps: 历史时间步数 (42 = 7天 × 每天6个4小时间隔)
-            predict_steps: 预测步数 (14 = 未来14天，每天取一个值)
-            start_date: 数据起始日期
-            end_date: 数据结束日期
-            mode: 'train' / 'val' / 'test'
-        """
         self.history_steps = history_steps
         self.predict_steps = predict_steps
         self.mode = mode
+        self.data_dir = Path(data_dir)
 
         # 加载图结构
         self.graph = load_graph(graph_dir)
         self.num_nodes = self.graph["num_nodes"]
         self.node_ids = self.graph["node_ids"]
 
-        # 加载数据
-        self.data_dir = Path(data_dir)
-        self._load_data(start_date, end_date)
-
-        logger.info(f"Dataset [{mode}]: {len(self)} 个样本, "
-                     f"{self.num_nodes} 节点, "
-                     f"history={history_steps}, predict={predict_steps}")
-
-    def _load_data(self, start_date, end_date):
-        """加载并对齐所有数据源"""
-        # 加载水质数据
-        self.wq_data = self._load_water_quality(start_date, end_date)
-
-        # 加载气象数据
-        self.weather_data = self._load_weather(start_date, end_date)
-
-        # 加载遥感数据（训练时可用，推理时用最近值填充）
+        # 加载原始数据
+        self.wq_df = self._load_water_quality(start_date, end_date)
+        self.wx_df = self._load_weather(start_date, end_date)
         self.rs_data = self._load_remote_sensing()
 
         # 构建时间索引
         self._build_time_index()
 
-        # 计算归一化参数
+        # 归一化
         if self.mode == "train":
             self._compute_normalization()
         else:
             self._load_normalization()
 
+        # 核心: 预计算全部特征为 numpy 数组
+        self._precompute_tensors()
+
+        logger.info(f"Dataset [{mode}]: {len(self)} 样本, "
+                     f"{self.num_nodes} 节点, "
+                     f"feature_tensor={self.feature_tensor.shape}, "
+                     f"history={history_steps}, predict={predict_steps}")
+
+    # ----------------------------------------------------------------
+    # 数据加载
+    # ----------------------------------------------------------------
+
     def _load_water_quality(self, start_date, end_date):
-        """加载水质数据"""
         processed_file = self.data_dir / "processed" / "water_quality.csv"
         if processed_file.exists():
             df = pd.read_csv(processed_file, parse_dates=["time"])
@@ -92,7 +84,6 @@ class TaihuDataset(Dataset):
                 df = df[df["time"] <= end_date]
             return df
 
-        # 如果没有预处理文件，从原始 JSON 构建
         raw_dir = self.data_dir / "raw"
         records = []
         for json_file in sorted(raw_dir.glob("**/water_quality_*.json")):
@@ -110,7 +101,6 @@ class TaihuDataset(Dataset):
         return df
 
     def _load_weather(self, start_date, end_date):
-        """加载气象数据"""
         processed_file = self.data_dir / "processed" / "weather.csv"
         if processed_file.exists():
             df = pd.read_csv(processed_file, parse_dates=["time"])
@@ -120,27 +110,27 @@ class TaihuDataset(Dataset):
                 df = df[df["time"] <= end_date]
             return df
 
-        # 尝试从 Open-Meteo 历史数据加载
         history_file = self.data_dir / "raw" / "weather_history_all.csv"
         if history_file.exists():
             df = pd.read_csv(history_file, parse_dates=["time"])
+            if start_date:
+                df = df[df["time"] >= start_date]
+            if end_date:
+                df = df[df["time"] <= end_date]
             return df
 
         logger.warning("未找到气象数据，使用合成数据")
         return self._generate_synthetic_weather(start_date, end_date)
 
     def _load_remote_sensing(self):
-        """加载遥感数据"""
         s2_file = self.data_dir / "raw" / "sentinel2_features.csv"
         lst_file = self.data_dir / "raw" / "modis_lst.csv"
-
         rs_data = {}
         if s2_file.exists():
             s2 = pd.read_csv(s2_file)
             for _, row in s2.iterrows():
                 key = (row["station_id"], row["month"])
                 rs_data[key] = {"ndci": row.get("ndci"), "fai": row.get("fai")}
-
         if lst_file.exists():
             lst = pd.read_csv(lst_file)
             for _, row in lst.iterrows():
@@ -149,125 +139,114 @@ class TaihuDataset(Dataset):
                     rs_data[key]["lst"] = row.get("lst_celsius")
                 else:
                     rs_data[key] = {"lst": row.get("lst_celsius")}
-
         return rs_data
 
+    # ----------------------------------------------------------------
+    # 合成数据 (无真实数据时)
+    # ----------------------------------------------------------------
+
     def _generate_synthetic_wq(self, start_date, end_date):
-        """生成合成水质数据（开发测试用）"""
-        logger.info("生成合成水质数据用于测试...")
+        logger.info("生成合成水质数据...")
         start = pd.Timestamp(start_date or "2016-01-01")
         end = pd.Timestamp(end_date or "2025-12-31")
         times = pd.date_range(start, end, freq="4h")
-
-        records = []
         rng = np.random.RandomState(42)
 
-        for t in times:
-            for sid in self.node_ids:
-                # 带季节性的合成数据
-                month = t.month
-                # 夏季水温高、叶绿素高（蓝藻高发）
-                season_factor = np.sin((month - 3) * np.pi / 6)
+        n_times = len(times)
+        n_nodes = len(self.node_ids)
+        total = n_times * n_nodes
 
-                record = {
-                    "station_id": sid,
-                    "time": t,
-                    "water_temp": 15 + 10 * season_factor + rng.normal(0, 2),
-                    "ph": 7.5 + rng.normal(0, 0.5),
-                    "do": 8.0 - 2 * season_factor + rng.normal(0, 1),
-                    "conductivity": 400 + rng.normal(0, 50),
-                    "turbidity": 10 + 5 * abs(season_factor) + rng.normal(0, 3),
-                    "codmn": 4.0 + 2 * season_factor + rng.normal(0, 1),
-                    "nh3n": 0.5 + 0.3 * season_factor + rng.normal(0, 0.15),
-                    "tp": 0.08 + 0.04 * season_factor + rng.normal(0, 0.02),
-                    "tn": 2.0 + 1.0 * season_factor + rng.normal(0, 0.5),
-                    "chla": max(5 + 30 * max(season_factor, 0) + rng.normal(0, 5), 0),
-                    "algae_density": max(500 + 3000 * max(season_factor, 0) + rng.normal(0, 300), 0),
-                }
-                records.append(record)
+        # 向量化生成
+        months = np.tile(times.month.values, n_nodes)
+        season = np.sin((months - 3) * np.pi / 6)
 
+        records = {
+            "station_id": np.repeat(self.node_ids, n_times),
+            "time": np.tile(times, n_nodes),
+            "water_temp": 15 + 10 * season + rng.normal(0, 2, total),
+            "ph": 7.5 + rng.normal(0, 0.5, total),
+            "do": 8.0 - 2 * season + rng.normal(0, 1, total),
+            "conductivity": 400 + rng.normal(0, 50, total),
+            "turbidity": 10 + 5 * np.abs(season) + rng.normal(0, 3, total),
+            "codmn": 4.0 + 2 * season + rng.normal(0, 1, total),
+            "nh3n": 0.5 + 0.3 * season + rng.normal(0, 0.15, total),
+            "tp": 0.08 + 0.04 * season + rng.normal(0, 0.02, total),
+            "tn": 2.0 + 1.0 * season + rng.normal(0, 0.5, total),
+            "chla": np.maximum(5 + 30 * np.maximum(season, 0) + rng.normal(0, 5, total), 0),
+            "algae_density": np.maximum(500 + 3000 * np.maximum(season, 0) + rng.normal(0, 300, total), 0),
+        }
         return pd.DataFrame(records)
 
     def _generate_synthetic_weather(self, start_date, end_date):
-        """V2 生成合成气象数据（开发测试用, 15个参数）"""
-        logger.info("生成 V2 合成气象数据用于测试...")
+        logger.info("生成 V2 合成气象数据...")
         start = pd.Timestamp(start_date or "2016-01-01")
         end = pd.Timestamp(end_date or "2025-12-31")
-        times = pd.date_range(start, end, freq="1h")
-
-        records = []
+        times = pd.date_range(start, end, freq="4h")  # 与水质对齐
         rng = np.random.RandomState(123)
+        n = len(times)
 
-        for t in times:
-            month = t.month
-            season_factor = np.sin((month - 3) * np.pi / 6)
-            temp = 15 + 15 * season_factor + rng.normal(0, 3)
-            humidity = max(min(65 + 15 * season_factor + rng.normal(0, 10), 100), 0)
-            solar = max(200 + 300 * season_factor + rng.normal(0, 50), 0)
+        months = times.month.values
+        season = np.sin((months - 3) * np.pi / 6)
+        temp = 15 + 15 * season + rng.normal(0, 3, n)
+        humidity = np.clip(65 + 15 * season + rng.normal(0, 10, n), 0, 100)
+        solar = np.maximum(200 + 300 * season + rng.normal(0, 50, n), 0)
 
-            record = {
-                "time": t,
-                "temperature": temp,
-                "humidity": humidity,
-                "dewpoint": temp - (100 - humidity) / 5.0 + rng.normal(0, 1),
-                "precipitation": max(rng.exponential(1.0) * (0.5 + 0.5 * season_factor), 0),
-                "rain": max(rng.exponential(0.5) * (0.5 + 0.5 * season_factor), 0),
-                "wind_speed": 3.0 + rng.exponential(2.0),
-                "wind_direction": rng.uniform(0, 360),
-                "wind_gusts": 5.0 + rng.exponential(4.0),
-                "solar_radiation": solar,
-                "direct_radiation": solar * 0.6 + rng.normal(0, 20),
-                "diffuse_radiation": solar * 0.4 + rng.normal(0, 15),
-                "pressure": 1013 + rng.normal(0, 5),
-                "cloud_cover": max(min(50 + 20 * season_factor + rng.normal(0, 20), 100), 0),
-                "evapotranspiration": max(0.1 + 0.3 * max(season_factor, 0) + rng.normal(0, 0.05), 0),
-                "soil_temperature": temp - 2 + rng.normal(0, 1),
-                "location_name": "太湖中心"
-            }
-            records.append(record)
-
+        records = {
+            "time": times,
+            "temperature": temp,
+            "humidity": humidity,
+            "dewpoint": temp - (100 - humidity) / 5.0 + rng.normal(0, 1, n),
+            "precipitation": np.maximum(rng.exponential(1.0, n) * (0.5 + 0.5 * season), 0),
+            "rain": np.maximum(rng.exponential(0.5, n) * (0.5 + 0.5 * season), 0),
+            "wind_speed": 3.0 + rng.exponential(2.0, n),
+            "wind_direction": rng.uniform(0, 360, n),
+            "wind_gusts": 5.0 + rng.exponential(4.0, n),
+            "solar_radiation": solar,
+            "direct_radiation": solar * 0.6 + rng.normal(0, 20, n),
+            "diffuse_radiation": solar * 0.4 + rng.normal(0, 15, n),
+            "pressure": 1013 + rng.normal(0, 5, n),
+            "cloud_cover": np.clip(50 + 20 * season + rng.normal(0, 20, n), 0, 100),
+            "evapotranspiration": np.maximum(0.1 + 0.3 * np.maximum(season, 0) + rng.normal(0, 0.05, n), 0),
+            "soil_temperature": temp - 2 + rng.normal(0, 1, n),
+        }
         return pd.DataFrame(records)
 
+    # ----------------------------------------------------------------
+    # 时间索引 & 归一化
+    # ----------------------------------------------------------------
+
     def _build_time_index(self):
-        """构建统一时间索引"""
-        if self.wq_data is None or len(self.wq_data) == 0:
-            self.time_index = []
+        if self.wq_df is None or len(self.wq_df) == 0:
+            self.time_index = pd.DatetimeIndex([])
             return
 
-        # 找到水质数据的时间范围，以4小时为间隔
-        if "time" in self.wq_data.columns:
-            min_time = self.wq_data["time"].min()
-            max_time = self.wq_data["time"].max()
+        if "time" in self.wq_df.columns:
+            min_time = self.wq_df["time"].min()
+            max_time = self.wq_df["time"].max()
             self.time_index = pd.date_range(min_time, max_time, freq="4h")
         else:
-            self.time_index = []
+            self.time_index = pd.DatetimeIndex([])
 
-        # 需要足够长的时间窗口
-        min_len = self.history_steps + self.predict_steps * 6  # predict_steps 天 × 6 步/天
+        min_len = self.history_steps + self.predict_steps * 6
         if len(self.time_index) < min_len:
             logger.warning(f"时间序列长度不足: {len(self.time_index)} < {min_len}")
 
     def _compute_normalization(self):
-        """计算训练集的归一化参数"""
         self.norm_params = {}
-
-        # 水质参数归一化
         for param in WATER_QUALITY_PARAMS:
-            if param in self.wq_data.columns:
-                vals = self.wq_data[param].dropna()
+            if param in self.wq_df.columns:
+                vals = self.wq_df[param].dropna()
                 self.norm_params[param] = {
                     "mean": float(vals.mean()),
                     "std": float(vals.std()) if vals.std() > 0 else 1.0
                 }
 
-        # 保存归一化参数
         norm_file = self.data_dir / "processed" / "norm_params.json"
         norm_file.parent.mkdir(parents=True, exist_ok=True)
         with open(norm_file, "w") as f:
             json.dump(self.norm_params, f, indent=2)
 
     def _load_normalization(self):
-        """加载训练集的归一化参数"""
         norm_file = self.data_dir / "processed" / "norm_params.json"
         if norm_file.exists():
             with open(norm_file, "r") as f:
@@ -275,86 +254,161 @@ class TaihuDataset(Dataset):
         else:
             self._compute_normalization()
 
-    def _normalize(self, value, param_name):
-        """归一化单个值"""
-        if param_name in self.norm_params:
-            p = self.norm_params[param_name]
-            return (value - p["mean"]) / p["std"]
-        return value
+    # ----------------------------------------------------------------
+    # 核心: 预计算特征张量
+    # ----------------------------------------------------------------
 
-    def _time_encoding(self, timestamp):
-        """V2 时间编码 [hour_sin, hour_cos, day_of_year_sin, day_of_year_cos, month_sin, month_cos]"""
-        hour = timestamp.hour
-        day_of_year = timestamp.timetuple().tm_yday
-        month = timestamp.month
-        return [
-            np.sin(2 * np.pi * hour / 24),
-            np.cos(2 * np.pi * hour / 24),
-            np.sin(2 * np.pi * day_of_year / 365),
-            np.cos(2 * np.pi * day_of_year / 365),
-            np.sin(2 * np.pi * month / 12),
-            np.cos(2 * np.pi * month / 12),
-        ]
-
-    def _get_features_at_time(self, time_step, node_idx):
-        """获取指定时间步和节点的特征向量"""
-        features = []
-        station_id = self.node_ids[node_idx]
-
-        # 1. 水质参数 (11维)
-        wq_mask = (self.wq_data.get("station_id") == station_id) if "station_id" in self.wq_data.columns else pd.Series(False, index=self.wq_data.index)
-        if "time" in self.wq_data.columns:
-            time_mask = (self.wq_data["time"] >= time_step - timedelta(hours=2)) & \
-                        (self.wq_data["time"] <= time_step + timedelta(hours=2))
-            matched = self.wq_data[wq_mask & time_mask]
-        else:
-            matched = pd.DataFrame()
-
-        for param in WATER_QUALITY_PARAMS:
-            if len(matched) > 0 and param in matched.columns:
-                val = matched[param].iloc[-1]
-                if pd.notna(val):
-                    features.append(self._normalize(val, param))
-                else:
-                    features.append(0.0)
-            else:
-                features.append(0.0)
-
-        # 2. V2 气象参数 (15维)
-        if self.weather_data is not None and "time" in self.weather_data.columns:
-            wx_mask = (self.weather_data["time"] >= time_step - timedelta(hours=1)) & \
-                      (self.weather_data["time"] <= time_step + timedelta(hours=1))
-            wx_matched = self.weather_data[wx_mask]
-        else:
-            wx_matched = pd.DataFrame()
-
-        for param in WEATHER_PARAMS:
-            if len(wx_matched) > 0 and param in wx_matched.columns:
-                val = wx_matched[param].iloc[-1]
-                features.append(float(val) if pd.notna(val) else 0.0)
-            else:
-                features.append(0.0)
-
-        # 3. V2 时间编码 (6维)
-        features.extend(self._time_encoding(time_step))
-
-        # 4. 遥感特征 (3维)
-        month_key = (station_id, time_step.strftime("%Y-%m"))
-        rs = self.rs_data.get(month_key, {})
-        features.append(float(rs.get("ndci", 0) or 0))
-        features.append(float(rs.get("fai", 0) or 0))
-        features.append(float(rs.get("lst", 0) or 0))
-
-        return features
-
-    def _get_bloom_label(self, chla, algae_density):
+    def _precompute_tensors(self):
         """
-        蓝藻水华风险分类
-        0: 无风险 (Chl-a < 10, 藻密度 < 1000)
-        1: 轻度 (10 <= Chl-a < 26, 1000 <= 藻密度 < 5000)
-        2: 中度 (26 <= Chl-a < 64, 5000 <= 藻密度 < 20000)
-        3: 重度 (Chl-a >= 64, 藻密度 >= 20000)
+        一次性将所有数据预计算为 numpy 数组:
+          feature_tensor: (T, N, F) — 所有时间步的完整特征
+          wq_raw_tensor:  (T, N, 11) — 水质原始值 (用于标签和蓝藻分类)
         """
+        T = len(self.time_index)
+        N = self.num_nodes
+        F = FEATURE_DIM
+
+        if T == 0:
+            self.feature_tensor = np.zeros((0, N, F), dtype=np.float32)
+            self.wq_raw_tensor = np.zeros((0, N, NUM_WQ), dtype=np.float32)
+            return
+
+        logger.info(f"预计算特征张量: T={T}, N={N}, F={F}...")
+
+        feature_tensor = np.zeros((T, N, F), dtype=np.float32)
+        wq_raw_tensor = np.zeros((T, N, NUM_WQ), dtype=np.float32)
+
+        # 1. 构建水质查找表: {(station_id, time_idx) -> wq_values}
+        wq_lookup = self._build_wq_lookup()
+
+        # 2. 构建气象查找表: {time_idx -> wx_values}
+        wx_lookup = self._build_wx_lookup()
+
+        # 3. 填充特征张量
+        for t_idx, t in enumerate(self.time_index):
+            # 时间编码 (对所有节点相同)
+            hour = t.hour
+            doy = t.timetuple().tm_yday
+            month = t.month
+            time_enc = np.array([
+                np.sin(2 * np.pi * hour / 24),
+                np.cos(2 * np.pi * hour / 24),
+                np.sin(2 * np.pi * doy / 365),
+                np.cos(2 * np.pi * doy / 365),
+                np.sin(2 * np.pi * month / 12),
+                np.cos(2 * np.pi * month / 12),
+            ], dtype=np.float32)
+
+            # 气象 (对所有节点相同，取最近网格点均值)
+            wx_vals = wx_lookup.get(t_idx, np.zeros(NUM_WX, dtype=np.float32))
+
+            month_str = t.strftime("%Y-%m")
+
+            for n_idx in range(N):
+                sid = self.node_ids[n_idx]
+
+                # 水质 (11维, 归一化)
+                wq_raw = wq_lookup.get((sid, t_idx), np.zeros(NUM_WQ, dtype=np.float32))
+                wq_raw_tensor[t_idx, n_idx] = wq_raw
+
+                wq_norm = np.zeros(NUM_WQ, dtype=np.float32)
+                for i, param in enumerate(WATER_QUALITY_PARAMS):
+                    if param in self.norm_params:
+                        p = self.norm_params[param]
+                        wq_norm[i] = (wq_raw[i] - p["mean"]) / p["std"]
+                    else:
+                        wq_norm[i] = wq_raw[i]
+
+                # 遥感 (3维)
+                rs = self.rs_data.get((sid, month_str), {})
+                rs_vals = np.array([
+                    float(rs.get("ndci", 0) or 0),
+                    float(rs.get("fai", 0) or 0),
+                    float(rs.get("lst", 0) or 0),
+                ], dtype=np.float32)
+
+                # 拼接: [wq(11) | wx(15) | time(6) | rs(3)] = 35
+                feature_tensor[t_idx, n_idx] = np.concatenate([
+                    wq_norm, wx_vals, time_enc, rs_vals
+                ])
+
+            if (t_idx + 1) % 5000 == 0:
+                logger.info(f"  预计算进度: {t_idx + 1}/{T}")
+
+        self.feature_tensor = feature_tensor
+        self.wq_raw_tensor = wq_raw_tensor
+        logger.info(f"预计算完成: feature={feature_tensor.shape}, "
+                     f"内存={feature_tensor.nbytes / 1e6:.1f} MB")
+
+    def _build_wq_lookup(self):
+        """构建水质数据查找表，使用时间索引对齐"""
+        lookup = {}
+        if self.wq_df is None or len(self.wq_df) == 0:
+            return lookup
+
+        if "time" not in self.wq_df.columns or "station_id" not in self.wq_df.columns:
+            return lookup
+
+        # 将水质时间对齐到最近的 4h 时间步
+        wq = self.wq_df.copy()
+        wq["time_aligned"] = wq["time"].dt.round("4h")
+
+        # 转为 time_index 查找
+        time_to_idx = {t: i for i, t in enumerate(self.time_index)}
+
+        for sid in self.node_ids:
+            station_data = wq[wq["station_id"] == sid]
+            for _, row in station_data.iterrows():
+                t_aligned = row["time_aligned"]
+                t_idx = time_to_idx.get(t_aligned)
+                if t_idx is None:
+                    continue
+                vals = np.array([
+                    float(row[p]) if pd.notna(row.get(p)) else 0.0
+                    for p in WATER_QUALITY_PARAMS
+                ], dtype=np.float32)
+                lookup[(sid, t_idx)] = vals
+
+        return lookup
+
+    def _build_wx_lookup(self):
+        """构建气象数据查找表"""
+        lookup = {}
+        if self.wx_df is None or len(self.wx_df) == 0:
+            return lookup
+
+        if "time" not in self.wx_df.columns:
+            return lookup
+
+        wx = self.wx_df.copy()
+        wx["time_aligned"] = wx["time"].dt.round("4h")
+
+        time_to_idx = {t: i for i, t in enumerate(self.time_index)}
+
+        # 按时间聚合（多个网格点取均值）
+        wx_params = [p for p in WEATHER_PARAMS if p in wx.columns]
+        missing_params = [p for p in WEATHER_PARAMS if p not in wx.columns]
+
+        if wx_params:
+            grouped = wx.groupby("time_aligned")[wx_params].mean()
+            for t, row in grouped.iterrows():
+                t_idx = time_to_idx.get(t)
+                if t_idx is None:
+                    continue
+                vals = np.zeros(NUM_WX, dtype=np.float32)
+                for i, param in enumerate(WEATHER_PARAMS):
+                    if param in row.index and pd.notna(row[param]):
+                        vals[i] = float(row[param])
+                lookup[t_idx] = vals
+
+        return lookup
+
+    # ----------------------------------------------------------------
+    # 蓝藻分类
+    # ----------------------------------------------------------------
+
+    @staticmethod
+    def _get_bloom_label(chla, algae_density):
         if chla >= 64 or algae_density >= 20000:
             return 3
         elif chla >= 26 or algae_density >= 5000:
@@ -364,54 +418,58 @@ class TaihuDataset(Dataset):
         else:
             return 0
 
+    # ----------------------------------------------------------------
+    # Dataset 接口
+    # ----------------------------------------------------------------
+
     def __len__(self):
         min_len = self.history_steps + self.predict_steps * 6
         return max(0, len(self.time_index) - min_len)
 
     def __getitem__(self, idx):
-        # 历史时间窗口
-        history_times = self.time_index[idx:idx + self.history_steps]
+        # 历史窗口: [idx, idx + history_steps)
+        x = self.feature_tensor[idx:idx + self.history_steps]  # (H, N, F)
+        x = x.transpose(1, 0, 2)  # (N, H, F)
 
-        # 未来预测时间点（每天1个，共 predict_steps 天）
-        predict_start = self.time_index[idx + self.history_steps]
-        predict_times = [predict_start + timedelta(days=d) for d in range(self.predict_steps)]
+        # 未来预测时间点 (每天1个, 共 predict_steps 天)
+        pred_start = idx + self.history_steps
+        pred_indices = []
+        for d in range(self.predict_steps):
+            # 每天 = 6 个 4h 步
+            target_idx = pred_start + d * 6
+            if target_idx < len(self.time_index):
+                pred_indices.append(target_idx)
+            else:
+                pred_indices.append(len(self.time_index) - 1)
 
-        # 构建节点特征 (num_nodes, history_steps, feature_dim)
-        x = np.zeros((self.num_nodes, self.history_steps, FEATURE_DIM), dtype=np.float32)
-        for t_idx, t in enumerate(history_times):
-            for n_idx in range(self.num_nodes):
-                x[n_idx, t_idx, :] = self._get_features_at_time(t, n_idx)
+        # 水质标签 (N, P, 11) — 归一化值
+        y_wq = np.stack([
+            self.feature_tensor[pi, :, :NUM_WQ]  # 取前 11 维 (归一化水质)
+            for pi in pred_indices
+        ], axis=1)  # (N, P, 11)
 
-        # 构建标签
-        # 水质回归标签 (num_nodes, predict_steps, 11)
-        y_wq = np.zeros((self.num_nodes, self.predict_steps, len(WATER_QUALITY_PARAMS)), dtype=np.float32)
-        # 蓝藻分类标签 (num_nodes,) — 取预测窗口内最高风险
+        # 蓝藻分类标签 (N,) — 取预测窗口最高风险
         y_bloom = np.zeros(self.num_nodes, dtype=np.int64)
-
-        for n_idx in range(self.num_nodes):
+        for n in range(self.num_nodes):
             max_bloom = 0
-            for p_idx, pt in enumerate(predict_times):
-                feats = self._get_features_at_time(pt, n_idx)
-                y_wq[n_idx, p_idx, :] = feats[:len(WATER_QUALITY_PARAMS)]
-
-                # 蓝藻分类 (Chl-a = index 9, 藻密度 = index 10)
-                chla = feats[9] if len(feats) > 9 else 0
-                algae = feats[10] if len(feats) > 10 else 0
+            for pi in pred_indices:
+                raw = self.wq_raw_tensor[pi, n]
+                chla = raw[9]  # chla index
+                algae = raw[10]  # algae_density index
                 bloom = self._get_bloom_label(chla, algae)
                 max_bloom = max(max_bloom, bloom)
-
-            y_bloom[n_idx] = max_bloom
+            y_bloom[n] = max_bloom
 
         return {
-            "x": torch.FloatTensor(x),
-            "y_wq": torch.FloatTensor(y_wq),
-            "y_bloom": torch.LongTensor(y_bloom),
+            "x": torch.from_numpy(x.copy()),
+            "y_wq": torch.from_numpy(y_wq.copy()),
+            "y_bloom": torch.from_numpy(y_bloom.copy()),
         }
 
 
 def collate_fn(batch):
     """自定义 collate 函数"""
-    x = torch.stack([item["x"] for item in batch])           # (B, N, T, F)
-    y_wq = torch.stack([item["y_wq"] for item in batch])     # (B, N, P, 11)
-    y_bloom = torch.stack([item["y_bloom"] for item in batch])  # (B, N)
+    x = torch.stack([item["x"] for item in batch])
+    y_wq = torch.stack([item["y_wq"] for item in batch])
+    y_bloom = torch.stack([item["y_bloom"] for item in batch])
     return {"x": x, "y_wq": y_wq, "y_bloom": y_bloom}
