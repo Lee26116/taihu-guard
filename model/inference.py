@@ -145,8 +145,8 @@ class TaihuInference:
                     features.append(val)
 
                 # V2 气象参数 (15维)
-                wx = weather_data.get("太湖中心", {})
-                realtime = wx.get("realtime", {})
+                wx = weather_data.get("太湖中心") or {}
+                realtime = wx.get("realtime") or {}
                 wx_values = {
                     "temperature": realtime.get("temp", 0),
                     "humidity": realtime.get("humidity", 0),
