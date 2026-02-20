@@ -107,6 +107,29 @@
             </div>
         </div>
 
+        <!-- 时间轴滑动条 -->
+        <div class="timeline-section">
+            <div class="panel timeline-panel">
+                <div class="timeline-bar">
+                    <span class="timeline-label" id="timelineMinLabel">-7天</span>
+                    <div class="timeline-track">
+                        <div class="timeline-progress" id="timelineProgress"></div>
+                        <input type="range" class="timeline-slider" id="timelineSlider"
+                               min="0" max="21" value="7" step="1">
+                        <div class="timeline-ticks" id="timelineTicks"></div>
+                    </div>
+                    <span class="timeline-label" id="timelineMaxLabel">+14天</span>
+                </div>
+                <div class="timeline-info">
+                    <span id="timelineDate">当前</span>
+                    <div class="timeline-buttons">
+                        <button class="tl-btn" id="tlPlay" title="播放">&#9654;</button>
+                        <button class="tl-btn" id="tlReset" title="回到当前">&#8634;</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 中部: 时间序列面板 -->
         <div class="middle-section">
             <div class="panel chart-panel">

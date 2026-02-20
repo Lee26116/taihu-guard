@@ -26,6 +26,7 @@ data/processed/
 # 模型权重 (用 git lfs 或手动管理)
 weights/*.pt
 weights/*.onnx
+weights/*.onnx.data
 weights/*.pth
 !weights/.gitkeep
 

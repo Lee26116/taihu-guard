@@ -5,7 +5,7 @@ TaihuGuard FastAPI 后端服务
 
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -207,19 +207,31 @@ def _get_demo_data():
     season = np.sin((month - 3) * np.pi / 6)
 
     results = []
-    for station in stations_data["stations"]:
+    total = len(stations_data["stations"])
+    for idx, station in enumerate(stations_data["stations"]):
+        # 为 demo 效果，让部分站点模拟高风险数据
+        demo_boost = 0
+        if idx < total * 0.1:       # ~10% 重度
+            demo_boost = 6
+        elif idx < total * 0.2:     # ~10% 中度
+            demo_boost = 3
+        elif idx < total * 0.35:    # ~15% 轻度
+            demo_boost = 1.5
+
+        effective_season = max(season, 0) + demo_boost * 0.4
+
         current = {
             "water_temp": round(15 + 10 * season + rng.normal(0, 2), 1),
             "ph": round(7.5 + rng.normal(0, 0.3), 2),
-            "do": round(8.0 - 2 * season + rng.normal(0, 0.5), 2),
+            "do": round(max(8.0 - 2 * effective_season + rng.normal(0, 0.5), 2), 2),
             "conductivity": round(400 + rng.normal(0, 30), 1),
-            "turbidity": round(10 + 5 * abs(season) + rng.normal(0, 2), 1),
-            "codmn": round(4.0 + 2 * season + rng.normal(0, 0.5), 2),
-            "nh3n": round(max(0.3 + 0.2 * season + rng.normal(0, 0.1), 0.01), 3),
-            "tp": round(max(0.06 + 0.03 * season + rng.normal(0, 0.01), 0.001), 4),
-            "tn": round(max(1.5 + 0.8 * season + rng.normal(0, 0.3), 0.1), 2),
-            "chla": round(max(5 + 20 * max(season, 0) + rng.normal(0, 3), 0), 1),
-            "algae_density": round(max(300 + 2000 * max(season, 0) + rng.normal(0, 200), 0), 0),
+            "turbidity": round(10 + 5 * effective_season + rng.normal(0, 2), 1),
+            "codmn": round(4.0 + 2 * effective_season + rng.normal(0, 0.5), 2),
+            "nh3n": round(max(0.3 + 0.2 * effective_season + rng.normal(0, 0.1), 0.01), 3),
+            "tp": round(max(0.06 + 0.05 * effective_season + rng.normal(0, 0.01), 0.001), 4),
+            "tn": round(max(1.5 + 0.8 * effective_season + rng.normal(0, 0.3), 0.1), 2),
+            "chla": round(max(5 + 25 * effective_season + rng.normal(0, 5), 0), 1),
+            "algae_density": round(max(300 + 3000 * effective_season + rng.normal(0, 300), 0), 0),
         }
 
         # 水质等级判断
@@ -251,16 +263,20 @@ def _get_demo_data():
         bloom_labels = {0: "无风险", 1: "轻度", 2: "中度", 3: "重度"}
         bloom_colors = {0: "#22c55e", 1: "#eab308", 2: "#f97316", 3: "#ef4444"}
 
-        # 生成7天预测
+        # 生成14天预测 (V2)
         predictions = []
-        for day in range(1, 8):
-            day_current = {}
+        for day in range(1, 15):
+            day_values = {}
+            day_uncertainty = {}
             for k, v in current.items():
-                drift = rng.normal(0, abs(v) * 0.05) if v != 0 else 0
-                day_current[k] = round(max(v + drift, 0), 4)
+                drift = rng.normal(0, abs(v) * 0.03 * day) if v != 0 else 0
+                day_values[k] = round(max(v + drift, 0), 4)
+                # 不确定性随时间增大
+                day_uncertainty[k] = round(abs(v) * 0.05 * (1 + day * 0.15), 4)
             predictions.append({
                 "date": (now + timedelta(days=day)).strftime("%Y-%m-%d"),
-                "values": day_current
+                "values": day_values,
+                "uncertainty": day_uncertainty
             })
 
         results.append({
@@ -295,7 +311,6 @@ def _get_demo_data():
                 "lon": s["lon"],
             })
 
-    from datetime import timedelta
     return {
         "update_time": now.isoformat(),
         "stations": results,

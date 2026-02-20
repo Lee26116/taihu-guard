@@ -58,7 +58,7 @@ function updateTimeSeriesChart() {
         }
     }
 
-    // 预测数据
+    // 预测数据 (V2: 14天 + 真实不确定性)
     const predDates = [];
     const predValues = [];
     const predUpper = [];
@@ -69,9 +69,10 @@ function updateTimeSeriesChart() {
             predDates.push(pred.date);
             const val = pred.values?.[param] || 0;
             predValues.push(val);
-            // 置信区间 (±15%)
-            predUpper.push(val * 1.15);
-            predLower.push(val * 0.85);
+            // 使用模型输出的不确定性（如有），否则按 ±15% 回退
+            const unc = pred.uncertainty?.[param] || val * 0.15;
+            predUpper.push(val + unc);
+            predLower.push(Math.max(0, val - unc));
         });
     }
 
@@ -306,7 +307,7 @@ function renderModalChart(station) {
     const option = {
         backgroundColor: 'transparent',
         title: {
-            text: '未来7天预测趋势',
+            text: '未来14天预测趋势',
             left: 0,
             textStyle: { color: '#e5e7eb', fontSize: 13, fontWeight: 600 }
         },
