@@ -117,10 +117,11 @@ body::after {
 }
 
 .logo h1 {
-    font-size: 19px;
+    font-size: 18px;
     font-weight: 700;
     color: var(--text-primary);
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
 }
 
 .subtitle {
@@ -129,6 +130,7 @@ body::after {
     padding-left: 12px;
     margin-left: 4px;
     border-left: 1px solid var(--border-bright);
+    white-space: nowrap;
 }
 
 .header-right { display: flex; align-items: center; gap: 16px; }
