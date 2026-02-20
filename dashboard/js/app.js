@@ -69,12 +69,15 @@ async function loadLatestData() {
         // 数据来源标识
         const indicator = document.getElementById('statusIndicator');
         const statusText = document.querySelector('.status-text');
+        const notice = document.getElementById('dataNotice');
         if (data.demo) {
             if (statusText) statusText.textContent = '演示数据';
             if (indicator) indicator.classList.add('demo-mode');
+            if (notice) notice.style.display = 'flex';
         } else {
             if (statusText) statusText.textContent = '模型推理';
             if (indicator) indicator.classList.remove('demo-mode');
+            if (notice) notice.style.display = 'none';
         }
     }
     return data;
@@ -371,6 +374,12 @@ async function init() {
 
     bindEvents();
     initAboutDrawer();
+
+    // 数据说明横幅关闭
+    document.getElementById('dataNoticeClose')?.addEventListener('click', () => {
+        const notice = document.getElementById('dataNotice');
+        if (notice) notice.style.display = 'none';
+    });
 
     // 加载配置 (Mapbox Token 等)
     const configData = await fetchAPI('/api/config');

@@ -42,6 +42,13 @@
         </div>
     </header>
 
+    <!-- 数据来源说明横幅 (演示模式时显示) -->
+    <div class="data-notice" id="dataNotice" style="display:none">
+        <span class="data-notice-icon">&#9432;</span>
+        <span>当前展示为<strong>模拟演示数据</strong>，基于太湖历史统计特征合成，用于系统功能演示。实时监测数据接入后将自动切换为真实模型推理结果。</span>
+        <button class="data-notice-close" id="dataNoticeClose" aria-label="关闭提示">&times;</button>
+    </div>
+
     <!-- 统计概览条 -->
     <div class="stats-bar" id="statsBar">
         <div class="stat-item">
