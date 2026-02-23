@@ -1,0 +1,1852 @@
+{
+  "prediction_time": "2026-02-22T13:41:40.675324",
+  "stations": [
+    {
+      "id": "殷桥",
+      "name": "殷桥",
+      "lat": 31.2258,
+      "lon": 120.1375,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.8653,
+        "ph": 7.7115,
+        "do": 8.6298,
+        "conductivity": 355.1348,
+        "turbidity": 13.7361,
+        "codmn": 5.9514,
+        "nh3n": 0.0987,
+        "tp": 0.065
+      },
+      "water_quality_level": {
+        "level": 3,
+        "name": "III类",
+        "color": "#eab308"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "乌龟山南",
+      "name": "乌龟山南",
+      "lat": 31.4937,
+      "lon": 120.0802,
+      "basin": "太湖流域",
+      "type": "湖体",
+      "current": {
+        "water_temp": 10.66,
+        "ph": 8.104,
+        "do": 11.064,
+        "conductivity": 456.37,
+        "turbidity": 44.273,
+        "codmn": 2.53,
+        "nh3n": 0.0165,
+        "tp": 0.0474,
+        "tn": 2.077,
+        "chla": 2.44,
+        "algae_density": 197.8226
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": 0,
+        "label": "无风险",
+        "color": "#22c55e"
+      },
+      "predictions": []
+    },
+    {
+      "id": "五里湖心",
+      "name": "五里湖心",
+      "lat": 32.1876,
+      "lon": 119.4203,
+      "basin": "太湖流域",
+      "type": "湖体",
+      "current": {
+        "water_temp": 11.66,
+        "ph": 7.97,
+        "do": 11.171,
+        "conductivity": 472.86,
+        "turbidity": 69.5405,
+        "codmn": 2.49,
+        "tp": 0.0264,
+        "tn": 0.837,
+        "chla": 5.82,
+        "algae_density": 152.0997
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": 0,
+        "label": "无风险",
+        "color": "#22c55e"
+      },
+      "predictions": []
+    },
+    {
+      "id": "兰山嘴",
+      "name": "兰山嘴",
+      "lat": 31.3756,
+      "lon": 120.1833,
+      "basin": "太湖流域",
+      "type": "湖体",
+      "current": {
+        "water_temp": 11.06,
+        "ph": 8.405,
+        "do": 11.474,
+        "conductivity": 491.003,
+        "turbidity": 124.36,
+        "codmn": 3.94,
+        "nh3n": 0.0404,
+        "tp": 0.1057,
+        "tn": 3.085,
+        "chla": 4.45,
+        "algae_density": 761.0169
+      },
+      "water_quality_level": {
+        "level": 3,
+        "name": "III类",
+        "color": "#eab308"
+      },
+      "bloom_warning": {
+        "level": 0,
+        "label": "无风险",
+        "color": "#22c55e"
+      },
+      "predictions": []
+    },
+    {
+      "id": "拖山",
+      "name": "拖山",
+      "lat": 31.3422,
+      "lon": 120.2156,
+      "basin": "太湖流域",
+      "type": "湖体",
+      "current": {
+        "water_temp": 10.95,
+        "ph": 8.483,
+        "do": 11.404,
+        "conductivity": 531.93,
+        "turbidity": 27.24,
+        "codmn": 2.93,
+        "tp": 0.038,
+        "tn": 2.141,
+        "chla": 12.55,
+        "algae_density": 180.2473
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": 1,
+        "label": "轻度",
+        "color": "#eab308"
+      },
+      "predictions": []
+    },
+    {
+      "id": "胥湖心",
+      "name": "胥湖心",
+      "lat": 31.2258,
+      "lon": 120.1375,
+      "basin": "太湖流域",
+      "type": "湖体",
+      "current": {
+        "water_temp": 12.02,
+        "ph": 8.31,
+        "do": 10.706,
+        "conductivity": 403.83,
+        "turbidity": 32.094,
+        "codmn": 3.137,
+        "nh3n": 0.0634,
+        "tp": 0.0257,
+        "tn": 0.987,
+        "chla": 5.84,
+        "algae_density": 638.073
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": 0,
+        "label": "无风险",
+        "color": "#22c55e"
+      },
+      "predictions": []
+    },
+    {
+      "id": "落蓬湾",
+      "name": "落蓬湾",
+      "lat": 31.3463,
+      "lon": 119.2233,
+      "basin": "太湖流域",
+      "type": "湖体",
+      "current": {
+        "water_temp": 14.82,
+        "ph": 8.31,
+        "do": 9.216,
+        "conductivity": 350.5,
+        "turbidity": 12.0,
+        "codmn": 4.588,
+        "nh3n": 0.0197,
+        "tp": 0.0262,
+        "tn": 1.445
+      },
+      "water_quality_level": {
+        "level": 3,
+        "name": "III类",
+        "color": "#eab308"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "朱厍港口",
+      "name": "朱厍港口",
+      "lat": 31.682,
+      "lon": 119.804,
+      "basin": "太湖流域",
+      "type": "入湖",
+      "current": {
+        "water_temp": 11.0,
+        "ph": 7.5,
+        "do": 6.87,
+        "conductivity": 771.4,
+        "turbidity": 31.8,
+        "codmn": 2.958,
+        "tp": 0.049,
+        "tn": 2.133
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "望亭上游",
+      "name": "望亭上游",
+      "lat": 31.4193,
+      "lon": 120.446,
+      "basin": "太湖流域",
+      "type": "出湖",
+      "current": {
+        "water_temp": 11.97,
+        "ph": 7.39,
+        "do": 9.8,
+        "conductivity": 694.51,
+        "turbidity": 17.88,
+        "codmn": 2.29,
+        "nh3n": 0.22,
+        "tp": 0.0788,
+        "tn": 2.709
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "瓜泾口西",
+      "name": "瓜泾口西",
+      "lat": 31.2258,
+      "lon": 120.1375,
+      "basin": "太湖流域",
+      "type": "出湖",
+      "current": {
+        "water_temp": 10.06,
+        "ph": 8.04,
+        "do": 11.3,
+        "conductivity": 447.3,
+        "turbidity": 3.2,
+        "codmn": 2.26,
+        "nh3n": 0.017,
+        "tp": 0.014,
+        "tn": 0.55
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "312国道桥",
+      "name": "312国道桥",
+      "lat": 32.1731,
+      "lon": 118.501,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.96,
+        "ph": 8.44,
+        "do": 12.88,
+        "conductivity": 417.23,
+        "turbidity": 9.1,
+        "codmn": 1.739,
+        "nh3n": 0.0236,
+        "tp": 0.028,
+        "tn": 1.669
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "九号桥",
+      "name": "九号桥",
+      "lat": 31.4487,
+      "lon": 120.0542,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 10.21,
+        "ph": 8.09,
+        "do": 9.74,
+        "conductivity": 428.1,
+        "turbidity": 16.5,
+        "codmn": 0.99,
+        "nh3n": 0.0555,
+        "tp": 0.0518,
+        "tn": 2.103
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "五牧",
+      "name": "五牧",
+      "lat": 31.6778,
+      "lon": 120.1541,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 11.77,
+        "ph": 7.87,
+        "do": 10.45,
+        "conductivity": 458.69,
+        "turbidity": 25.01,
+        "codmn": 2.461,
+        "nh3n": 0.192,
+        "tp": 0.0748,
+        "tn": 2.887
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "千灯浦口",
+      "name": "千灯浦口",
+      "lat": 32.0598,
+      "lon": 118.6272,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.53,
+        "ph": 7.865,
+        "do": 9.977,
+        "conductivity": 577.846,
+        "turbidity": 40.957,
+        "codmn": 3.1878,
+        "nh3n": 0.0273,
+        "tp": 0.0691,
+        "tn": 2.2681
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "吕城",
+      "name": "吕城",
+      "lat": 31.8951,
+      "lon": 119.7423,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 11.758,
+        "ph": 8.41,
+        "do": 11.579,
+        "conductivity": 439.112,
+        "turbidity": 17.317,
+        "codmn": 1.951,
+        "nh3n": 0.023,
+        "tp": 0.072,
+        "tn": 2.358
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "大浦港桥",
+      "name": "大浦港桥",
+      "lat": 31.6361,
+      "lon": 119.5044,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 11.9,
+        "ph": 8.02,
+        "do": 9.962,
+        "conductivity": 558.392,
+        "turbidity": 107.088,
+        "codmn": 3.389,
+        "nh3n": 0.072,
+        "tp": 0.079,
+        "tn": 2.662
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "姚巷桥",
+      "name": "姚巷桥",
+      "lat": 31.5007,
+      "lon": 120.1215,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 10.3,
+        "ph": 8.66,
+        "do": 14.28,
+        "conductivity": 434.03,
+        "turbidity": 25.01,
+        "codmn": 3.531,
+        "tp": 0.061,
+        "tn": 3.135
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "新港桥",
+      "name": "新港桥",
+      "lat": 31.0428,
+      "lon": 119.9168,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.43,
+        "ph": 8.54,
+        "do": 13.118,
+        "conductivity": 393.3,
+        "turbidity": 2.7,
+        "codmn": 2.448,
+        "nh3n": 0.0182,
+        "tp": 0.0365,
+        "tn": 1.532
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "林家闸",
+      "name": "林家闸",
+      "lat": 31.2258,
+      "lon": 120.1375,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 11.323,
+        "ph": 7.9,
+        "do": 10.61,
+        "conductivity": 413.322,
+        "turbidity": 12.483,
+        "codmn": 1.595,
+        "nh3n": 0.042,
+        "tp": 0.04,
+        "tn": 1.924
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "殷村港桥",
+      "name": "殷村港桥",
+      "lat": 31.5033,
+      "lon": 119.8381,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 11.66,
+        "ph": 7.74,
+        "do": 9.44,
+        "conductivity": 553.06,
+        "turbidity": 55.62,
+        "codmn": 3.75,
+        "nh3n": 0.077,
+        "tp": 0.143,
+        "tn": 3.07
+      },
+      "water_quality_level": {
+        "level": 3,
+        "name": "III类",
+        "color": "#eab308"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "江边闸",
+      "name": "江边闸",
+      "lat": 32.2089,
+      "lon": 119.2299,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 10.96,
+        "ph": 8.21,
+        "do": 10.96,
+        "conductivity": 412.2,
+        "turbidity": 13.21,
+        "codmn": 1.566,
+        "nh3n": 0.0222,
+        "tp": 0.0499,
+        "tn": 1.757
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "浏河闸",
+      "name": "浏河闸",
+      "lat": 31.4909,
+      "lon": 121.2792,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 11.86,
+        "ph": 8.291,
+        "do": 7.322,
+        "conductivity": 497.58,
+        "turbidity": 30.719,
+        "codmn": 1.5249,
+        "nh3n": 0.0155,
+        "tp": 0.0668,
+        "tn": 2.307
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "潘家坝",
+      "name": "潘家坝",
+      "lat": 31.3937,
+      "lon": 119.5769,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.248,
+        "ph": 7.92,
+        "do": 10.268,
+        "conductivity": 525.716,
+        "turbidity": 110.567,
+        "codmn": 2.903,
+        "nh3n": 0.143,
+        "tp": 0.056,
+        "tn": 2.885
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "百渎港桥",
+      "name": "百渎港桥",
+      "lat": 31.5047,
+      "lon": 120.108,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 13.09,
+        "ph": 8.11,
+        "do": 10.68,
+        "conductivity": 536.9,
+        "turbidity": 24.05,
+        "codmn": 2.37,
+        "nh3n": 0.058,
+        "tp": 0.066,
+        "tn": 2.798
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "航管站",
+      "name": "航管站",
+      "lat": 32.0614,
+      "lon": 118.7636,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 11.3,
+        "ph": 7.97,
+        "do": 9.97,
+        "conductivity": 429.69,
+        "turbidity": 42.65,
+        "codmn": 2.42,
+        "tp": 0.021,
+        "tn": 1.176
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "蠡桥",
+      "name": "蠡桥",
+      "lat": 31.4966,
+      "lon": 120.3405,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 11.51,
+        "ph": 8.08,
+        "do": 10.53,
+        "conductivity": 323.12,
+        "turbidity": 74.65,
+        "codmn": 1.059,
+        "nh3n": 0.046,
+        "tp": 0.0494,
+        "tn": 0.981
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "赵屯(石浦大桥)",
+      "name": "赵屯(石浦大桥)",
+      "lat": 31.433,
+      "lon": 120.8752,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 10.85,
+        "ph": 8.132,
+        "do": 9.979,
+        "conductivity": 693.866,
+        "turbidity": 35.665,
+        "codmn": 2.8108,
+        "nh3n": 0.0219,
+        "tp": 0.0738,
+        "tn": 2.9178
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "越溪桥",
+      "name": "越溪桥",
+      "lat": 31.3885,
+      "lon": 120.9734,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 11.81,
+        "ph": 8.11,
+        "do": 10.558,
+        "conductivity": 440.1,
+        "turbidity": 18.0,
+        "codmn": 3.092,
+        "nh3n": 0.2382,
+        "tp": 0.0421,
+        "tn": 0.8
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "辛丰镇",
+      "name": "辛丰镇",
+      "lat": 32.1234,
+      "lon": 119.5728,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.34,
+        "ph": 7.98,
+        "do": 9.497,
+        "conductivity": 409.6,
+        "turbidity": 15.5,
+        "codmn": 1.272,
+        "nh3n": 0.0937,
+        "tp": 0.0574,
+        "tn": 2.325
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "金潼桥",
+      "name": "金潼桥",
+      "lat": 30.9928,
+      "lon": 120.0311,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 13.08,
+        "ph": 7.74,
+        "do": 9.88,
+        "conductivity": 395.7,
+        "turbidity": 15.88,
+        "codmn": 1.683,
+        "nh3n": 0.0777,
+        "tp": 0.0527,
+        "tn": 1.981
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "钓邾大桥",
+      "name": "钓邾大桥",
+      "lat": 31.2462,
+      "lon": 118.9053,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 11.7,
+        "ph": 8.47,
+        "do": 12.54,
+        "conductivity": 466.89,
+        "turbidity": 13.98,
+        "codmn": 2.33,
+        "nh3n": 0.085,
+        "tp": 0.0728,
+        "tn": 2.409
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "长济桥",
+      "name": "长济桥",
+      "lat": 31.9078,
+      "lon": 120.2041,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 13.07,
+        "ph": 8.06,
+        "do": 10.222,
+        "conductivity": 414.4,
+        "turbidity": 13.01,
+        "codmn": 1.853,
+        "nh3n": 0.0581,
+        "tp": 0.0523,
+        "tn": 2.06
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "黄埝桥",
+      "name": "黄埝桥",
+      "lat": 31.8328,
+      "lon": 119.6078,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.31,
+        "ph": 8.17,
+        "do": 10.368,
+        "conductivity": 443.8,
+        "turbidity": 24.89,
+        "codmn": 2.327,
+        "nh3n": 0.1056,
+        "tp": 0.0657,
+        "tn": 1.987
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "新港口(新塘港)",
+      "name": "新港口(新塘港)",
+      "lat": 30.6413,
+      "lon": 119.6333,
+      "basin": "太湖流域",
+      "type": "入湖",
+      "current": {
+        "water_temp": 13.09,
+        "ph": 9.06,
+        "do": 10.44,
+        "conductivity": 449.29,
+        "turbidity": 50.32,
+        "codmn": 2.518,
+        "nh3n": 0.0892,
+        "tp": 0.028,
+        "tn": 1.265,
+        "chla": 54.64
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": 2,
+        "label": "中度",
+        "color": "#f97316"
+      },
+      "predictions": []
+    },
+    {
+      "id": "上塘河排涝闸",
+      "name": "上塘河排涝闸",
+      "lat": 31.2258,
+      "lon": 120.1375,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 13.07,
+        "ph": 7.79,
+        "do": 6.666,
+        "conductivity": 838.6,
+        "turbidity": 10.9,
+        "codmn": 1.75,
+        "nh3n": 0.0702,
+        "tp": 0.0492,
+        "tn": 3.08
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "乌镇北",
+      "name": "乌镇北",
+      "lat": 30.7415,
+      "lon": 120.4938,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 10.97,
+        "ph": 7.76,
+        "do": 8.78,
+        "conductivity": 514.6,
+        "turbidity": 42.28,
+        "codmn": 3.86,
+        "nh3n": 0.124,
+        "tp": 0.056,
+        "tn": 2.817
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "南台头闸一号桥",
+      "name": "南台头闸一号桥",
+      "lat": 31.4157,
+      "lon": 120.1107,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.2,
+        "ph": 7.8,
+        "do": 9.24,
+        "conductivity": 679.6,
+        "turbidity": 11.09,
+        "codmn": 3.11,
+        "nh3n": 0.185,
+        "tp": 0.08,
+        "tn": 3.719
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "南浔",
+      "name": "南浔",
+      "lat": 30.8508,
+      "lon": 120.4182,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.8,
+        "ph": 7.87,
+        "do": 8.68,
+        "conductivity": 470.6,
+        "turbidity": 32.2,
+        "codmn": 2.438,
+        "nh3n": 0.283,
+        "tp": 0.054,
+        "tn": 2.782
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "卫八路桥（嘉兴金桥）",
+      "name": "卫八路桥（嘉兴金桥）",
+      "lat": 30.7097,
+      "lon": 121.2855,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.253,
+        "ph": 7.611,
+        "do": 7.564,
+        "conductivity": 718.64,
+        "turbidity": 13.679,
+        "codmn": 3.07,
+        "nh3n": 0.232,
+        "tp": 0.084,
+        "tn": 3.47
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "合溪",
+      "name": "合溪",
+      "lat": 31.05,
+      "lon": 119.95,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 13.01,
+        "ph": 8.09,
+        "do": 9.73,
+        "conductivity": 496.1,
+        "turbidity": 47.12,
+        "codmn": 3.004,
+        "nh3n": 0.0939,
+        "tp": 0.0236,
+        "tn": 1.85
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "城西大桥",
+      "name": "城西大桥",
+      "lat": 30.4414,
+      "lon": 120.4361,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 11.7,
+        "ph": 7.65,
+        "do": 8.585,
+        "conductivity": 494.61,
+        "turbidity": 26.7,
+        "codmn": 3.272,
+        "nh3n": 0.4053,
+        "tp": 0.0455,
+        "tn": 4.084
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "塘浦",
+      "name": "塘浦",
+      "lat": 31.2963,
+      "lon": 120.7734,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.37,
+        "ph": 7.4,
+        "do": 10.101,
+        "conductivity": 168.19,
+        "turbidity": 2.67,
+        "codmn": 2.145,
+        "nh3n": 0.0194,
+        "tp": 0.0231,
+        "tn": 2.37
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "大钱",
+      "name": "大钱",
+      "lat": 31.4487,
+      "lon": 120.0542,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.27,
+        "ph": 8.4155,
+        "do": 10.7912,
+        "conductivity": 436.2115,
+        "turbidity": 79.2106,
+        "codmn": 3.2831,
+        "nh3n": 0.1406,
+        "tp": 0.0432,
+        "tn": 1.2958
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "奉口",
+      "name": "奉口",
+      "lat": 30.4425,
+      "lon": 120.0706,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 13.43,
+        "ph": 7.9,
+        "do": 8.58,
+        "conductivity": 386.4,
+        "turbidity": 5.92,
+        "codmn": 2.31,
+        "nh3n": 0.028,
+        "tp": 0.031,
+        "tn": 2.322
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "小新村",
+      "name": "小新村",
+      "lat": 30.7943,
+      "lon": 121.1218,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.63,
+        "ph": 7.85,
+        "do": 9.03,
+        "conductivity": 700.0,
+        "turbidity": 28.54,
+        "codmn": 3.05,
+        "nh3n": 0.125,
+        "tp": 0.078,
+        "tn": 3.479
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "小梅口",
+      "name": "小梅口",
+      "lat": 31.2258,
+      "lon": 120.1375,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 11.94,
+        "ph": 7.16,
+        "do": 10.03,
+        "conductivity": 399.8,
+        "turbidity": 14.25,
+        "codmn": 2.77,
+        "nh3n": 0.029,
+        "tp": 0.027,
+        "tn": 1.466
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "新塘",
+      "name": "新塘",
+      "lat": 30.93,
+      "lon": 120.21,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.76,
+        "ph": 8.09,
+        "do": 10.9,
+        "conductivity": 504.9,
+        "turbidity": 23.13,
+        "codmn": 2.518,
+        "nh3n": 0.0568,
+        "tp": 0.0322,
+        "tn": 1.635
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "朱枫公路桥（清凉大桥）",
+      "name": "朱枫公路桥（清凉大桥）",
+      "lat": 31.0067,
+      "lon": 121.0481,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.02,
+        "ph": 7.78,
+        "do": 10.23,
+        "conductivity": 583.07,
+        "turbidity": 25.6,
+        "codmn": 3.453,
+        "nh3n": 0.121,
+        "tp": 0.044,
+        "tn": 3.348
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "杨家浦",
+      "name": "杨家浦",
+      "lat": 31.0175,
+      "lon": 120.0156,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 11.5248,
+        "ph": 8.0864,
+        "do": 10.4628,
+        "conductivity": 479.8813,
+        "turbidity": 34.5236,
+        "codmn": 2.44,
+        "nh3n": 0.0095,
+        "tp": 0.0393,
+        "tn": 1.4706
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "枫南大桥",
+      "name": "枫南大桥",
+      "lat": 30.8812,
+      "lon": 120.9958,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.3218,
+        "ph": 7.41,
+        "do": 9.3133,
+        "conductivity": 587.76,
+        "turbidity": 26.6658,
+        "codmn": 3.686,
+        "nh3n": 0.0711,
+        "tp": 0.069,
+        "tn": 3.036
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "池家浜水文站",
+      "name": "池家浜水文站",
+      "lat": 30.7577,
+      "lon": 120.6916,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 13.093,
+        "ph": 7.9216,
+        "do": 9.4498,
+        "conductivity": 549.2,
+        "turbidity": 15.0961,
+        "codmn": 2.658,
+        "nh3n": 0.0532,
+        "tp": 0.0382,
+        "tn": 1.878
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "汤溇",
+      "name": "汤溇",
+      "lat": 30.9353,
+      "lon": 120.3425,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.71,
+        "ph": 8.6809,
+        "do": 9.8902,
+        "conductivity": 383.6828,
+        "turbidity": 58.9033,
+        "codmn": 2.7753,
+        "nh3n": 0.1037,
+        "tp": 0.0276,
+        "tn": 0.9872
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "湘家荡",
+      "name": "湘家荡",
+      "lat": 30.0302,
+      "lon": 120.6044,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.24,
+        "ph": 7.72,
+        "do": 9.447,
+        "conductivity": 511.07,
+        "turbidity": 13.39,
+        "codmn": 2.489,
+        "nh3n": 0.0245,
+        "tp": 0.0425,
+        "tn": 0.584
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "漕廊公路桥",
+      "name": "漕廊公路桥",
+      "lat": 30.7873,
+      "lon": 121.2827,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.3947,
+        "ph": 7.6873,
+        "do": 9.0811,
+        "conductivity": 640.1585,
+        "turbidity": 20.4204,
+        "codmn": 3.1976,
+        "nh3n": 0.1516,
+        "tp": 0.0638,
+        "tn": 2.51
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "王江泾",
+      "name": "王江泾",
+      "lat": 30.8704,
+      "lon": 120.7124,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 14.18,
+        "ph": 7.694,
+        "do": 9.08,
+        "conductivity": 583.3,
+        "turbidity": 12.02,
+        "codmn": 3.313,
+        "nh3n": 0.081,
+        "tp": 0.061,
+        "tn": 2.685
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "盐官排涝枢纽",
+      "name": "盐官排涝枢纽",
+      "lat": 30.4351,
+      "lon": 120.7887,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.92,
+        "ph": 8.02,
+        "do": 10.79,
+        "conductivity": 608.0,
+        "turbidity": 19.26,
+        "codmn": 2.95,
+        "nh3n": 0.363,
+        "tp": 0.038,
+        "tn": 3.345
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "红旗塘大坝",
+      "name": "红旗塘大坝",
+      "lat": 30.0194,
+      "lon": 120.8738,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.4,
+        "ph": 8.02,
+        "do": 9.96,
+        "conductivity": 544.1,
+        "turbidity": 15.59,
+        "codmn": 3.55,
+        "nh3n": 0.155,
+        "tp": 0.04,
+        "tn": 2.841
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "荆湾",
+      "name": "荆湾",
+      "lat": 30.8256,
+      "lon": 119.7809,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 11.24,
+        "ph": 7.09,
+        "do": 9.428,
+        "conductivity": 430.6,
+        "turbidity": 1.86,
+        "codmn": 2.149,
+        "nh3n": 0.5465,
+        "tp": 0.047,
+        "tn": 4.526
+      },
+      "water_quality_level": {
+        "level": 3,
+        "name": "III类",
+        "color": "#eab308"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "铁路桥",
+      "name": "铁路桥",
+      "lat": 30.7135,
+      "lon": 119.9678,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 11.88,
+        "ph": 7.21,
+        "do": 8.567,
+        "conductivity": 459.52,
+        "turbidity": 3.24,
+        "codmn": 3.205,
+        "nh3n": 0.48,
+        "tp": 0.051,
+        "tn": 4.281
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "长山闸一号桥",
+      "name": "长山闸一号桥",
+      "lat": 30.6148,
+      "lon": 121.093,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.2949,
+        "ph": 8.8017,
+        "do": 13.0797,
+        "conductivity": 903.91,
+        "turbidity": 10.5478,
+        "codmn": 3.68,
+        "nh3n": 0.0203,
+        "tp": 0.034,
+        "tn": 3.097
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    },
+    {
+      "id": "青阳汇",
+      "name": "青阳汇",
+      "lat": 30.8144,
+      "lon": 121.1021,
+      "basin": "太湖流域",
+      "type": "河道",
+      "current": {
+        "water_temp": 12.56,
+        "ph": 7.74,
+        "do": 9.63,
+        "conductivity": 953.5,
+        "turbidity": 36.12,
+        "codmn": 3.21,
+        "nh3n": 0.152,
+        "tp": 0.063,
+        "tn": 3.767
+      },
+      "water_quality_level": {
+        "level": 2,
+        "name": "II类",
+        "color": "#84cc16"
+      },
+      "bloom_warning": {
+        "level": -1,
+        "label": "无数据",
+        "color": "#6b7280"
+      },
+      "predictions": []
+    }
+  ],
+  "alerts": [
+    {
+      "station_id": "新港口(新塘港)",
+      "station_name": "新港口(新塘港)",
+      "basin": "太湖流域",
+      "level": 2,
+      "label": "中度",
+      "color": "#f97316",
+      "lat": 30.6413,
+      "lon": 119.6333
+    }
+  ]
+}

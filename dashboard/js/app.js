@@ -22,6 +22,7 @@ const AppState = {
     selectedStation: null,
     selectedParam: 'chla',
     modelMetrics: null,
+    stationHistory: [],
     isLoading: true,
 };
 
@@ -66,18 +67,14 @@ async function loadLatestData() {
                 `更新: ${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
         }
 
-        // 数据来源标识
-        const indicator = document.getElementById('statusIndicator');
+        // 数据来源状态
         const statusText = document.querySelector('.status-text');
-        const notice = document.getElementById('dataNotice');
-        if (data.demo) {
-            if (statusText) statusText.textContent = '演示数据';
-            if (indicator) indicator.classList.add('demo-mode');
-            if (notice) notice.style.display = 'flex';
-        } else {
+        if (data.has_prediction) {
             if (statusText) statusText.textContent = '模型推理';
-            if (indicator) indicator.classList.remove('demo-mode');
-            if (notice) notice.style.display = 'none';
+        } else if (data.stations && data.stations.length > 0) {
+            if (statusText) statusText.textContent = '实测数据';
+        } else {
+            if (statusText) statusText.textContent = '暂无数据';
         }
     }
     return data;
@@ -87,6 +84,16 @@ async function loadModelMetrics() {
     const data = await fetchAPI('/api/model/metrics');
     if (data) {
         AppState.modelMetrics = data;
+    }
+    return data;
+}
+
+async function loadStationHistory(stationId) {
+    const data = await fetchAPI(`/api/station/${stationId}`);
+    if (data) {
+        AppState.stationHistory = data.history || [];
+    } else {
+        AppState.stationHistory = [];
     }
     return data;
 }
@@ -147,14 +154,23 @@ function updateMetricCards() {
             .map(s => s.current?.[param])
             .filter(v => v !== null && v !== undefined);
 
-        if (!values.length) return;
-
-        const avg = values.reduce((a, b) => a + b, 0) / values.length;
-        const config = PARAM_CONFIG[param];
         const card = document.getElementById(ids[i]);
         if (!card) return;
 
         const valEl = card.querySelector('.metric-value');
+        const trendEl = card.querySelector('.metric-trend');
+
+        if (!values.length) {
+            if (valEl) valEl.textContent = '--';
+            if (trendEl) {
+                trendEl.textContent = '无数据';
+                trendEl.className = 'metric-trend stable';
+            }
+            return;
+        }
+
+        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+        const config = PARAM_CONFIG[param];
         const targetVal = parseFloat(avg.toFixed(config.decimals));
 
         if (typeof animateValue === 'function') {
@@ -163,16 +179,14 @@ function updateMetricCards() {
             valEl.textContent = avg.toFixed(config.decimals);
         }
 
-        // 趋势: 对比预测值
+        // 趋势: 对比预测值 (仅当有预测时)
         const futureValues = AppState.stations
             .map(s => s.predictions?.[0]?.values?.[param])
             .filter(v => v !== null && v !== undefined);
 
-        if (futureValues.length) {
+        if (futureValues.length && trendEl) {
             const futureAvg = futureValues.reduce((a, b) => a + b, 0) / futureValues.length;
             const change = ((futureAvg - avg) / Math.max(Math.abs(avg), 0.001)) * 100;
-            const trendEl = card.querySelector('.metric-trend');
-            if (!trendEl) return;
 
             if (Math.abs(change) < 1) {
                 trendEl.textContent = '→ 持平';
@@ -184,6 +198,9 @@ function updateMetricCards() {
                 trendEl.textContent = `↓ ${Math.abs(change).toFixed(1)}%`;
                 trendEl.className = 'metric-trend down';
             }
+        } else if (trendEl) {
+            trendEl.textContent = '-- 仅实测';
+            trendEl.className = 'metric-trend stable';
         }
     });
 }
@@ -191,6 +208,19 @@ function updateMetricCards() {
 function updateModelMetricsUI() {
     const m = AppState.modelMetrics;
     if (!m) return;
+
+    // 模型尚未训练时显示占位提示
+    if (m.status === 'pending_retrain') {
+        const container = document.getElementById('modelMetrics');
+        if (container) {
+            const metricsRows = container.querySelectorAll('.metric-row-bar');
+            metricsRows.forEach(row => {
+                const valEl = row.querySelector('.metric-val');
+                if (valEl) valEl.textContent = '--';
+            });
+        }
+        return;
+    }
 
     const wq = m.water_quality || {};
     const bloom = m.bloom_warning || {};
@@ -254,29 +284,28 @@ function populateStationSelect() {
     }
 }
 
-// ==================== About 抽屉面板 ====================
-function initAboutDrawer() {
-    const btn = document.getElementById('aboutBtn');
-    const overlay = document.getElementById('aboutDrawer');
-    const closeBtn = document.getElementById('aboutDrawerClose');
+// ==================== 抽屉面板 ====================
+function initDrawer(btnId, drawerId, closeId) {
+    const btn = document.getElementById(btnId);
+    const overlay = document.getElementById(drawerId);
+    const closeBtn = document.getElementById(closeId);
 
     if (!btn || !overlay) return;
 
-    btn.addEventListener('click', () => {
-        overlay.classList.add('active');
-    });
+    btn.addEventListener('click', () => overlay.classList.add('active'));
 
     if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            overlay.classList.remove('active');
-        });
+        closeBtn.addEventListener('click', () => overlay.classList.remove('active'));
     }
 
     overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-            overlay.classList.remove('active');
-        }
+        if (e.target === overlay) overlay.classList.remove('active');
     });
+}
+
+function initAboutDrawer() {
+    initDrawer('aboutBtn', 'aboutDrawer', 'aboutDrawerClose');
+    initDrawer('introBtn', 'introDrawer', 'introDrawerClose');
 }
 
 // ==================== 事件绑定 ====================
@@ -294,9 +323,14 @@ function bindEvents() {
         }
     });
 
-    // 站点选择
-    document.getElementById('chartStationSelect')?.addEventListener('change', (e) => {
+    // 站点选择 — 切换时获取真实历史数据
+    document.getElementById('chartStationSelect')?.addEventListener('change', async (e) => {
         AppState.selectedStation = e.target.value;
+        if (e.target.value) {
+            await loadStationHistory(e.target.value);
+        } else {
+            AppState.stationHistory = [];
+        }
         if (typeof updateTimeSeriesChart === 'function') {
             updateTimeSeriesChart();
         }
@@ -375,12 +409,6 @@ async function init() {
     bindEvents();
     initAboutDrawer();
 
-    // 数据说明横幅关闭
-    document.getElementById('dataNoticeClose')?.addEventListener('click', () => {
-        const notice = document.getElementById('dataNotice');
-        if (notice) notice.style.display = 'none';
-    });
-
     // 加载配置 (Mapbox Token 等)
     const configData = await fetchAPI('/api/config');
     if (configData && configData.mapbox_token) {
@@ -408,6 +436,11 @@ async function init() {
     updateMetricCards();
     updateModelMetricsUI();
     updateStatsBar();
+
+    // 加载第一个站点的历史数据
+    if (AppState.selectedStation) {
+        await loadStationHistory(AppState.selectedStation);
+    }
 
     // 更新预警列表
     if (typeof updateAlertList === 'function') {

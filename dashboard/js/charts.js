@@ -57,30 +57,53 @@ function updateTimeSeriesChart() {
     }
 
     const cfg = PARAM_CONFIG[param];
+    const currentVal = station.current?.[param];
 
-    const now = new Date();
+    // 使用真实历史数据
+    const history = AppState.stationHistory || [];
     const historyDates = [];
     const historyValues = [];
-    const currentVal = station.current?.[param] || 0;
 
-    for (let i = 7; i >= 0; i--) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - i);
-        historyDates.push(formatDate(d));
-        if (i === 0) {
+    history.forEach(h => {
+        const val = h[param];
+        if (val != null && h.time) {
+            const d = new Date(h.time);
+            historyDates.push(formatDate(d));
+            historyValues.push(Number(val));
+        }
+    });
+
+    // 追加当前值作为最后一个历史点
+    if (currentVal != null) {
+        const nowLabel = formatDate(new Date());
+        // 避免重复（如果历史最后一个点就是今天）
+        if (historyDates.length === 0 || historyDates[historyDates.length - 1] !== nowLabel) {
+            historyDates.push(nowLabel);
             historyValues.push(currentVal);
-        } else {
-            const noise = (Math.random() - 0.5) * currentVal * 0.2;
-            historyValues.push(Math.max(0, currentVal + noise));
         }
     }
 
+    // 无任何数据时显示空状态
+    if (historyDates.length === 0) {
+        timeSeriesChart.clear();
+        timeSeriesChart.setOption({
+            backgroundColor: 'transparent',
+            graphic: [{
+                type: 'text', left: 'center', top: 'middle',
+                style: { text: '暂无历史数据', fontSize: 14, fill: '#6b7280' }
+            }]
+        }, true);
+        updateRadarChart(station);
+        return;
+    }
+
+    // 预测数据
     const predDates = [];
     const predValues = [];
     const predUpper = [];
     const predLower = [];
 
-    if (station.predictions) {
+    if (station.predictions && station.predictions.length) {
         station.predictions.forEach(pred => {
             predDates.push(pred.date);
             const val = pred.values?.[param] || 0;
@@ -91,14 +114,100 @@ function updateTimeSeriesChart() {
         });
     }
 
+    const hasPredictions = predDates.length > 0;
     const allDates = [...historyDates, ...predDates];
     const historyFull = [...historyValues, ...Array(predDates.length).fill(null)];
-    const predFull = [...Array(historyDates.length - 1).fill(null), currentVal, ...predValues];
-    // 置信区间起点=当前值（无不确定性），逐渐展开
-    const upperFull = [...Array(historyDates.length - 1).fill(null), currentVal, ...predUpper];
-    const lowerFull = [...Array(historyDates.length - 1).fill(null), currentVal, ...predLower];
+
+    // 预测线从历史最后一点开始连接
+    const lastHistVal = historyValues[historyValues.length - 1];
+    const predFull = hasPredictions
+        ? [...Array(historyDates.length - 1).fill(null), lastHistVal, ...predValues]
+        : [];
+    const upperFull = hasPredictions
+        ? [...Array(historyDates.length - 1).fill(null), lastHistVal, ...predUpper]
+        : [];
+    const lowerFull = hasPredictions
+        ? [...Array(historyDates.length - 1).fill(null), lastHistVal, ...predLower]
+        : [];
 
     const forecastStartIdx = historyDates.length - 1;
+
+    const series = [
+        // 实测值
+        {
+            name: '实测值', type: 'line', data: historyFull, smooth: true,
+            lineStyle: { color: '#00d4ff', width: 2 },
+            itemStyle: { color: '#00d4ff' },
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(0, 212, 255, 0.15)' },
+                    { offset: 1, color: 'rgba(0, 212, 255, 0)' }
+                ])
+            },
+            symbolSize: 4, emphasis: { scale: true }
+        },
+        // 当前标记线
+        {
+            name: '当前', type: 'line',
+            markLine: {
+                silent: true, symbol: ['none', 'none'],
+                data: [{ xAxis: historyDates[historyDates.length - 1] }],
+                lineStyle: { color: '#6b7280', type: 'dashed', width: 1 },
+                label: { formatter: '当前', color: '#6b7280', fontSize: 10 }
+            },
+            markArea: {
+                silent: true,
+                data: hasPredictions ? [[
+                    { xAxis: historyDates[historyDates.length - 1] },
+                    { xAxis: allDates[allDates.length - 1] }
+                ]] : [],
+                itemStyle: { color: 'rgba(249, 115, 22, 0.03)' },
+                label: hasPredictions
+                    ? { show: true, formatter: '预测区间', position: 'insideTop', color: 'rgba(249, 115, 22, 0.3)', fontSize: 10 }
+                    : { show: false }
+            },
+            data: []
+        }
+    ];
+
+    // 仅当有预测时才添加预测相关 series
+    if (hasPredictions) {
+        series.unshift(
+            {
+                name: '置信下界', type: 'line', data: lowerFull,
+                lineStyle: { opacity: 0 }, stack: 'confidence', symbol: 'none', silent: true
+            },
+            {
+                name: '置信区间', type: 'line',
+                data: lowerFull.map((v, i) => {
+                    if (v === null || upperFull[i] === null) return null;
+                    return upperFull[i] - v;
+                }),
+                lineStyle: { opacity: 0 },
+                areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: 'rgba(0, 212, 255, 0.12)' },
+                        { offset: 1, color: 'rgba(0, 212, 255, 0.02)' }
+                    ])
+                },
+                stack: 'confidence', symbol: 'none', silent: true
+            }
+        );
+        series.push({
+            name: '预测值', type: 'line', data: predFull, smooth: true,
+            lineStyle: { color: '#f97316', width: 2, type: 'dashed' },
+            itemStyle: { color: '#f97316' },
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(249, 115, 22, 0.10)' },
+                    { offset: 1, color: 'rgba(249, 115, 22, 0)' }
+                ])
+            },
+            symbolSize: 4, emphasis: { scale: true }
+        });
+    }
+
+    const legendData = hasPredictions ? ['实测值', '预测值'] : ['实测值'];
 
     const option = {
         backgroundColor: 'transparent',
@@ -110,7 +219,7 @@ function updateTimeSeriesChart() {
             textStyle: { color: '#e5e7eb', fontSize: 12 },
             formatter: function (params) {
                 const dateStr = params[0].axisValue;
-                const isForecast = params[0].dataIndex >= forecastStartIdx;
+                const isForecast = hasPredictions && params[0].dataIndex >= forecastStartIdx;
                 let html = `<div style="font-weight:600;margin-bottom:4px">${dateStr} ${isForecast ? '<span style="color:#f97316;font-size:11px">[预测]</span>' : ''}</div>`;
                 params.forEach(p => {
                     if (p.value !== null && p.value !== undefined && p.seriesName !== '置信下界' && p.seriesName !== '置信区间') {
@@ -124,7 +233,7 @@ function updateTimeSeriesChart() {
             }
         },
         legend: {
-            data: ['实测值', '预测值'],
+            data: legendData,
             top: 4,
             right: 16,
             textStyle: { color: '#9ca3af', fontSize: 11 },
@@ -147,71 +256,7 @@ function updateTimeSeriesChart() {
             axisLabel: { color: '#6b7280', fontSize: 11 },
             splitLine: { lineStyle: { color: '#1e2433', type: 'dashed' } }
         },
-        series: [
-            // 置信区间: 先画下界(透明), 再叠差值(填充)
-            {
-                name: '置信下界', type: 'line', data: lowerFull,
-                lineStyle: { opacity: 0 }, stack: 'confidence', symbol: 'none', silent: true
-            },
-            {
-                name: '置信区间', type: 'line',
-                data: lowerFull.map((v, i) => {
-                    if (v === null || upperFull[i] === null) return null;
-                    return upperFull[i] - v;
-                }),
-                lineStyle: { opacity: 0 },
-                areaStyle: {
-                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                        { offset: 0, color: 'rgba(0, 212, 255, 0.12)' },
-                        { offset: 1, color: 'rgba(0, 212, 255, 0.02)' }
-                    ])
-                },
-                stack: 'confidence', symbol: 'none', silent: true
-            },
-            {
-                name: '实测值', type: 'line', data: historyFull, smooth: true,
-                lineStyle: { color: '#00d4ff', width: 2 },
-                itemStyle: { color: '#00d4ff' },
-                areaStyle: {
-                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                        { offset: 0, color: 'rgba(0, 212, 255, 0.15)' },
-                        { offset: 1, color: 'rgba(0, 212, 255, 0)' }
-                    ])
-                },
-                symbolSize: 4, emphasis: { scale: true }
-            },
-            {
-                name: '预测值', type: 'line', data: predFull, smooth: true,
-                lineStyle: { color: '#f97316', width: 2, type: 'dashed' },
-                itemStyle: { color: '#f97316' },
-                areaStyle: {
-                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                        { offset: 0, color: 'rgba(249, 115, 22, 0.10)' },
-                        { offset: 1, color: 'rgba(249, 115, 22, 0)' }
-                    ])
-                },
-                symbolSize: 4, emphasis: { scale: true }
-            },
-            {
-                name: '当前', type: 'line',
-                markLine: {
-                    silent: true, symbol: ['none', 'none'],
-                    data: [{ xAxis: historyDates[historyDates.length - 1] }],
-                    lineStyle: { color: '#6b7280', type: 'dashed', width: 1 },
-                    label: { formatter: '当前', color: '#6b7280', fontSize: 10 }
-                },
-                markArea: {
-                    silent: true,
-                    data: predDates.length ? [[
-                        { xAxis: historyDates[historyDates.length - 1] },
-                        { xAxis: allDates[allDates.length - 1] }
-                    ]] : [],
-                    itemStyle: { color: 'rgba(249, 115, 22, 0.03)' },
-                    label: { show: true, formatter: '预测区间', position: 'insideTop', color: 'rgba(249, 115, 22, 0.3)', fontSize: 10 }
-                },
-                data: []
-            }
-        ]
+        series: series
     };
 
     timeSeriesChart.setOption(option, true);
@@ -238,6 +283,12 @@ function updateWqDistChart() {
         itemStyle: { color: levelColors[i] }
     })).filter(d => d.value > 0);
 
+    if (!data.length) return;
+
+    // 找到占比最大的等级用于中心标签
+    const maxEntry = data.reduce((a, b) => b.value > a.value ? b : a, data[0]);
+    const total = AppState.stations.length;
+
     const option = {
         backgroundColor: 'transparent',
         tooltip: {
@@ -247,6 +298,28 @@ function updateWqDistChart() {
             textStyle: { color: '#e5e7eb', fontSize: 12 },
             formatter: '{b}: {c}站 ({d}%)'
         },
+        graphic: [{
+            type: 'text',
+            left: 'center',
+            top: '45%',
+            style: {
+                text: `${total}站`,
+                fontSize: 18,
+                fontWeight: 700,
+                fill: '#e5e7eb',
+                textAlign: 'center'
+            }
+        }, {
+            type: 'text',
+            left: 'center',
+            top: '56%',
+            style: {
+                text: data.length === 1 ? `全部${maxEntry.name}` : `${data.length}个等级`,
+                fontSize: 11,
+                fill: '#6b7280',
+                textAlign: 'center'
+            }
+        }],
         series: [{
             type: 'pie',
             radius: ['40%', '70%'],
@@ -289,9 +362,16 @@ function updateRadarChart(station) {
     const maxRefs = { chla: 80, do: 14, tp: 0.3, tn: 5, nh3n: 2, water_temp: 35 };
 
     const values = params.map(p => {
-        const val = station.current?.[p] || 0;
+        const val = station.current?.[p];
+        if (val == null) return 0;
         const maxRef = maxRefs[p] || 1;
         return Math.min((val / maxRef) * 100, 100);
+    });
+
+    // 标注无数据的参数
+    const indicatorLabels = params.map((p, i) => {
+        const hasData = station.current?.[p] != null;
+        return { name: hasData ? labels[i] : `${labels[i]}\n(无数据)`, max: 100 };
     });
 
     const option = {
@@ -302,7 +382,7 @@ function updateRadarChart(station) {
             textStyle: { color: '#e5e7eb', fontSize: 12 }
         },
         radar: {
-            indicator: labels.map(name => ({ name, max: 100 })),
+            indicator: indicatorLabels,
             center: ['50%', '55%'],
             radius: '60%',
             shape: 'polygon',
@@ -353,10 +433,23 @@ function updateStationCompareChart(param) {
 
     const cfg = PARAM_CONFIG[param];
 
-    // 按值排序，取所有站点
+    // 过滤掉没有该参数数据的站点
     const sorted = AppState.stations
-        .map(s => ({ name: s.name?.replace(/监测站|站$/, '') || s.id, val: s.current?.[param] || 0, level: s.water_quality_level?.level || 3 }))
+        .filter(s => s.current?.[param] != null)
+        .map(s => ({ name: s.name?.replace(/监测站|站$/, '') || s.id, val: s.current[param], level: s.water_quality_level?.level || 3 }))
         .sort((a, b) => b.val - a.val);
+
+    if (!sorted.length) {
+        stationCompareChart.clear();
+        stationCompareChart.setOption({
+            backgroundColor: 'transparent',
+            graphic: [{
+                type: 'text', left: 'center', top: 'middle',
+                style: { text: `暂无 ${cfg.name} 数据`, fontSize: 13, fill: '#6b7280' }
+            }]
+        }, true);
+        return;
+    }
 
     const levelColors = { 1: '#22c55e', 2: '#84cc16', 3: '#eab308', 4: '#f97316', 5: '#ef4444', 6: '#991b1b' };
 
@@ -413,7 +506,20 @@ function updateStationCompareChart(param) {
 
 // ==================== 特征重要性图 ====================
 function updateFeatureImportanceChart() {
-    if (!featureImportanceChart || !AppState.modelMetrics) return;
+    if (!featureImportanceChart) return;
+
+    // 检查是否有真实的特征重要性数据
+    if (!AppState.modelMetrics || AppState.modelMetrics.status === 'pending_retrain') {
+        featureImportanceChart.clear();
+        featureImportanceChart.setOption({
+            backgroundColor: 'transparent',
+            graphic: [{
+                type: 'text', left: 'center', top: 'middle',
+                style: { text: '模型训练后可用', fontSize: 13, fill: '#6b7280' }
+            }]
+        }, true);
+        return;
+    }
 
     const features = AppState.modelMetrics.feature_importance || [];
     if (!features.length) return;

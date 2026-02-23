@@ -98,6 +98,7 @@ class WaterQualityScraper:
                 "province": row[0],
                 "basin": row[1],
                 "station_name": row[2],
+                "station_id": row[2],
                 "time": row[3],
                 "water_quality_level": int(row[4]) if row[4] and str(row[4]).isdigit() else None,
             }
@@ -109,6 +110,14 @@ class WaterQualityScraper:
                     record[key] = _extract_value(row[idx])
                 else:
                     record[key] = None
+
+            # 单位换算: cnemc API 返回 Chla 单位为 mg/L，转为 µg/L
+            if record["chla"] is not None:
+                record["chla"] = record["chla"] * 1000.0
+
+            # 单位换算: cnemc API 返回藻密度单位为 cells/L，转为 万cells/L
+            if record["algae_density"] is not None:
+                record["algae_density"] = record["algae_density"] / 10000.0
 
             if record["station_name"]:
                 records.append(record)

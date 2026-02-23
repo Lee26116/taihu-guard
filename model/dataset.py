@@ -97,7 +97,19 @@ class TaihuDataset(Dataset):
             return self._generate_synthetic_wq(start_date, end_date)
 
         df = pd.DataFrame(records)
-        df["time"] = pd.to_datetime(df["time"])
+        df["time"] = pd.to_datetime(df["time"], errors="coerce")
+        df = df.dropna(subset=["time"])
+        if start_date:
+            df = df[df["time"] >= start_date]
+        if end_date:
+            df = df[df["time"] <= end_date]
+
+        # 数据量不足时回退到合成数据
+        min_required = (self.history_steps + self.predict_steps * 6) * self.num_nodes
+        if len(df) < min_required:
+            logger.warning(f"水质数据不足 ({len(df)} 行 < {min_required})，使用合成数据")
+            return self._generate_synthetic_wq(start_date, end_date)
+
         return df
 
     def _load_weather(self, start_date, end_date):

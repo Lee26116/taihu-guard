@@ -3,8 +3,6 @@
 # ============================================
 
 # --- 数据采集 ---
-selenium>=4.15.0
-webdriver-manager>=4.0.1
 requests>=2.31.0
 
 # --- 数据处理 ---
@@ -14,9 +12,6 @@ scipy>=1.11.0
 
 # --- 深度学习 (训练阶段) ---
 torch>=2.1.0
-torch-geometric>=2.4.0
-torch-scatter>=2.1.2
-torch-sparse>=0.6.18
 
 # --- ONNX 推理 (部署阶段) ---
 onnxruntime>=1.16.0

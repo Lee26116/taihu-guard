@@ -48,6 +48,126 @@ prediction_service = PredictionService(
     data_dir=DATA_DIR
 )
 
+# 站点元数据缓存
+_stations_meta = None
+
+
+def _load_stations_meta():
+    """加载 stations.json 元数据 (缓存)"""
+    global _stations_meta
+    if _stations_meta is None:
+        stations_file = Path(DATA_DIR) / "stations.json"
+        if stations_file.exists():
+            with open(stations_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            _stations_meta = {s["name"]: s for s in data.get("stations", [])}
+        else:
+            _stations_meta = {}
+    return _stations_meta
+
+
+def _get_water_quality_level(params):
+    """根据 GB3838-2002 单因子评价法判定水质等级"""
+    codmn = params.get("codmn") or 0
+    nh3n = params.get("nh3n") or 0
+    tp = params.get("tp") or 0
+    do_val = params.get("do") or 99
+
+    thresholds = [
+        (2, 0.15, 0.02, 7.5, 1, "I类", "#22c55e"),
+        (4, 0.5, 0.1, 6.0, 2, "II类", "#84cc16"),
+        (6, 1.0, 0.2, 5.0, 3, "III类", "#eab308"),
+        (10, 1.5, 0.3, 3.0, 4, "IV类", "#f97316"),
+        (15, 2.0, 0.4, 2.0, 5, "V类", "#ef4444"),
+    ]
+
+    for max_codmn, max_nh3n, max_tp, min_do, lvl, name, color in thresholds:
+        if codmn <= max_codmn and nh3n <= max_nh3n and tp <= max_tp and do_val >= min_do:
+            return {"level": lvl, "name": name, "color": color}
+
+    return {"level": 6, "name": "劣V类", "color": "#991b1b"}
+
+
+def _get_bloom_warning(params):
+    """根据 Chl-a 和藻密度计算蓝藻预警"""
+    chla = params.get("chla")
+    algae = params.get("algae_density")
+
+    if chla is None and algae is None:
+        return {"level": -1, "label": "无数据", "color": "#6b7280"}
+
+    chla = chla or 0
+    algae = algae or 0
+
+    if chla >= 64 or algae >= 20000:
+        level = 3
+    elif chla >= 26 or algae >= 5000:
+        level = 2
+    elif chla >= 10 or algae >= 1000:
+        level = 1
+    else:
+        level = 0
+
+    labels = {0: "无风险", 1: "轻度", 2: "中度", 3: "重度"}
+    colors = {0: "#22c55e", 1: "#eab308", 2: "#f97316", 3: "#ef4444"}
+    return {"level": level, "label": labels[level], "color": colors[level]}
+
+
+def _format_raw_data(raw_wq):
+    """将爬虫原始记录转为前端需要的站点格式"""
+    stations_meta = _load_stations_meta()
+    records = raw_wq.get("records", [])
+
+    stations = []
+    alerts = []
+
+    for record in records:
+        name = record.get("station_name", "")
+        meta = stations_meta.get(name, {})
+
+        # 提取水质参数
+        param_keys = [
+            "water_temp", "ph", "do", "conductivity", "turbidity",
+            "codmn", "nh3n", "tp", "tn", "chla", "algae_density"
+        ]
+        current = {}
+        for k in param_keys:
+            v = record.get(k)
+            if v is not None:
+                current[k] = float(v)
+
+        wq_level = _get_water_quality_level(current)
+        bloom = _get_bloom_warning(current)
+
+        station = {
+            "id": meta.get("id", name),
+            "name": name,
+            "lat": meta.get("lat", 0),
+            "lon": meta.get("lon", 0),
+            "basin": meta.get("basin", ""),
+            "type": meta.get("type", ""),
+            "current": current,
+            "water_quality_level": wq_level,
+            "bloom_warning": bloom,
+            "predictions": [],
+        }
+        stations.append(station)
+
+        if bloom["level"] >= 2:
+            alerts.append({
+                "station_id": station["id"],
+                "station_name": name,
+                "basin": station["basin"],
+                "level": bloom["level"],
+                "label": bloom["label"],
+                "color": bloom["color"],
+                "lat": station["lat"],
+                "lon": station["lon"],
+            })
+
+    alerts.sort(key=lambda x: -x["level"])
+    return stations, alerts
+
 
 @app.get("/api/config")
 async def get_config():
@@ -75,29 +195,32 @@ async def get_latest():
     # 尝试读取最新预测
     prediction = data_service.get_latest_prediction()
 
-    # 如果没有预测数据，返回最新的实测数据
-    if not prediction:
-        latest_data = data_service.get_latest_water_quality()
-        if not latest_data:
-            # 返回 demo 数据
-            return _get_demo_data()
+    if prediction:
+        return {
+            "update_time": prediction.get("prediction_time", ""),
+            "stations": prediction.get("stations", []),
+            "alerts": prediction.get("alerts", []),
+            "has_prediction": True
+        }
+
+    # 尝试读取最新实测数据
+    latest_data = data_service.get_latest_water_quality()
+    if latest_data:
+        stations, alerts = _format_raw_data(latest_data)
         return {
             "update_time": latest_data.get("scrape_time", ""),
-            "stations": latest_data.get("records", []),
+            "stations": stations,
+            "alerts": alerts,
             "has_prediction": False
         }
 
-    return {
-        "update_time": prediction.get("prediction_time", ""),
-        "stations": prediction.get("stations", []),
-        "alerts": prediction.get("alerts", []),
-        "has_prediction": True
-    }
+    # 无数据
+    return {"stations": [], "alerts": [], "has_prediction": False, "message": "暂无数据"}
 
 
 @app.get("/api/station/{station_id}")
 async def get_station_detail(station_id: str):
-    """获取单站点详情: 7天历史 + 7天预测"""
+    """获取单站点详情: 7天历史 + 预测"""
     # 从预测结果中找
     prediction = data_service.get_latest_prediction()
     station_pred = None
@@ -111,10 +234,6 @@ async def get_station_detail(station_id: str):
     history = data_service.get_station_history(station_id, days=7)
 
     if not station_pred and not history:
-        # 尝试 demo 数据
-        demo = _get_demo_station(station_id)
-        if demo:
-            return demo
         raise HTTPException(status_code=404, detail=f"站点 {station_id} 未找到")
 
     return {
@@ -137,8 +256,16 @@ async def get_alerts():
             "alerts": prediction["alerts"]
         }
 
-    # Demo 预警
-    return _get_demo_alerts()
+    # 尝试从实测数据生成预警
+    latest_data = data_service.get_latest_water_quality()
+    if latest_data:
+        _, alerts = _format_raw_data(latest_data)
+        return {
+            "update_time": latest_data.get("scrape_time", ""),
+            "alerts": alerts
+        }
+
+    return {"update_time": "", "alerts": []}
 
 
 @app.get("/api/model/metrics")
@@ -149,34 +276,9 @@ async def get_model_metrics():
         with open(metrics_file, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    # 返回示例指标
     return {
-        "water_quality": {
-            "chla": {"mae": 3.21, "rmse": 5.12, "r2": 0.89},
-            "do": {"mae": 0.42, "rmse": 0.68, "r2": 0.93},
-            "tp": {"mae": 0.012, "rmse": 0.018, "r2": 0.87},
-            "tn": {"mae": 0.31, "rmse": 0.52, "r2": 0.85},
-            "nh3n": {"mae": 0.08, "rmse": 0.12, "r2": 0.88},
-            "codmn": {"mae": 0.45, "rmse": 0.72, "r2": 0.86}
-        },
-        "bloom_warning": {
-            "accuracy": 0.87,
-            "f1_macro": 0.85,
-            "auc_roc": 0.94
-        },
-        "feature_importance": [
-            {"feature": "水温", "importance": 0.18},
-            {"feature": "风速", "importance": 0.15},
-            {"feature": "总磷", "importance": 0.13},
-            {"feature": "太阳辐射", "importance": 0.12},
-            {"feature": "气温", "importance": 0.10},
-            {"feature": "叶绿素a", "importance": 0.09},
-            {"feature": "溶解氧", "importance": 0.08},
-            {"feature": "降水", "importance": 0.07},
-            {"feature": "湿度", "importance": 0.05},
-            {"feature": "氨氮", "importance": 0.03}
-        ],
-        "note": "示例数据，模型训练后将更新"
+        "status": "pending_retrain",
+        "note": "模型尚未在真实数据上完成训练"
     }
 
 
@@ -188,163 +290,6 @@ async def get_stations():
         with open(stations_file, "r", encoding="utf-8") as f:
             return json.load(f)
     raise HTTPException(status_code=404, detail="站点数据未找到")
-
-
-def _get_demo_data():
-    """生成 Demo 数据"""
-    import numpy as np
-    rng = np.random.RandomState(42)
-
-    stations_file = Path(DATA_DIR) / "stations.json"
-    if not stations_file.exists():
-        return {"stations": [], "has_prediction": False, "demo": True}
-
-    with open(stations_file, "r", encoding="utf-8") as f:
-        stations_data = json.load(f)
-
-    now = datetime.now()
-    month = now.month
-    season = np.sin((month - 3) * np.pi / 6)
-
-    results = []
-    total = len(stations_data["stations"])
-    for idx, station in enumerate(stations_data["stations"]):
-        # 为 demo 效果，让部分站点模拟高风险数据
-        demo_boost = 0
-        if idx < total * 0.1:       # ~10% 重度
-            demo_boost = 6
-        elif idx < total * 0.2:     # ~10% 中度
-            demo_boost = 3
-        elif idx < total * 0.35:    # ~15% 轻度
-            demo_boost = 1.5
-
-        effective_season = max(season, 0) + demo_boost * 0.4
-
-        current = {
-            "water_temp": round(15 + 10 * season + rng.normal(0, 2), 1),
-            "ph": round(7.5 + rng.normal(0, 0.3), 2),
-            "do": round(max(8.0 - 2 * effective_season + rng.normal(0, 0.5), 2), 2),
-            "conductivity": round(400 + rng.normal(0, 30), 1),
-            "turbidity": round(10 + 5 * effective_season + rng.normal(0, 2), 1),
-            "codmn": round(4.0 + 2 * effective_season + rng.normal(0, 0.5), 2),
-            "nh3n": round(max(0.3 + 0.2 * effective_season + rng.normal(0, 0.1), 0.01), 3),
-            "tp": round(max(0.06 + 0.05 * effective_season + rng.normal(0, 0.01), 0.001), 4),
-            "tn": round(max(1.5 + 0.8 * effective_season + rng.normal(0, 0.3), 0.1), 2),
-            "chla": round(max(5 + 25 * effective_season + rng.normal(0, 5), 0), 1),
-            "algae_density": round(max(300 + 3000 * effective_season + rng.normal(0, 300), 0), 0),
-        }
-
-        # 水质等级判断
-        codmn = current["codmn"]
-        nh3n = current["nh3n"]
-        tp = current["tp"]
-        if codmn <= 2 and nh3n <= 0.15 and tp <= 0.02:
-            level = {"level": 1, "name": "I类", "color": "#22c55e"}
-        elif codmn <= 4 and nh3n <= 0.5 and tp <= 0.1:
-            level = {"level": 2, "name": "II类", "color": "#84cc16"}
-        elif codmn <= 6 and nh3n <= 1.0 and tp <= 0.2:
-            level = {"level": 3, "name": "III类", "color": "#eab308"}
-        elif codmn <= 10 and nh3n <= 1.5 and tp <= 0.3:
-            level = {"level": 4, "name": "IV类", "color": "#f97316"}
-        elif codmn <= 15 and nh3n <= 2.0 and tp <= 0.4:
-            level = {"level": 5, "name": "V类", "color": "#ef4444"}
-        else:
-            level = {"level": 6, "name": "劣V类", "color": "#991b1b"}
-
-        # 蓝藻预警
-        bloom_level = 0
-        if current["chla"] >= 64 or current["algae_density"] >= 20000:
-            bloom_level = 3
-        elif current["chla"] >= 26 or current["algae_density"] >= 5000:
-            bloom_level = 2
-        elif current["chla"] >= 10 or current["algae_density"] >= 1000:
-            bloom_level = 1
-
-        bloom_labels = {0: "无风险", 1: "轻度", 2: "中度", 3: "重度"}
-        bloom_colors = {0: "#22c55e", 1: "#eab308", 2: "#f97316", 3: "#ef4444"}
-
-        # 生成14天预测 (V2)
-        predictions = []
-        for day in range(1, 15):
-            day_values = {}
-            day_uncertainty = {}
-            for k, v in current.items():
-                drift = rng.normal(0, abs(v) * 0.03 * day) if v != 0 else 0
-                day_values[k] = round(max(v + drift, 0), 4)
-                # 不确定性随时间增大
-                day_uncertainty[k] = round(abs(v) * 0.05 * (1 + day * 0.15), 4)
-            predictions.append({
-                "date": (now + timedelta(days=day)).strftime("%Y-%m-%d"),
-                "values": day_values,
-                "uncertainty": day_uncertainty
-            })
-
-        results.append({
-            "id": station["id"],
-            "name": station["name"],
-            "lat": station["lat"],
-            "lon": station["lon"],
-            "basin": station.get("basin", ""),
-            "type": station.get("type", ""),
-            "current": current,
-            "water_quality_level": level,
-            "bloom_warning": {
-                "level": bloom_level,
-                "label": bloom_labels[bloom_level],
-                "color": bloom_colors[bloom_level]
-            },
-            "predictions": predictions
-        })
-
-    # 生成预警列表
-    alerts = []
-    for s in results:
-        if s["bloom_warning"]["level"] >= 2:
-            alerts.append({
-                "station_id": s["id"],
-                "station_name": s["name"],
-                "basin": s["basin"],
-                "level": s["bloom_warning"]["level"],
-                "label": s["bloom_warning"]["label"],
-                "color": s["bloom_warning"]["color"],
-                "lat": s["lat"],
-                "lon": s["lon"],
-            })
-
-    return {
-        "update_time": now.isoformat(),
-        "stations": results,
-        "alerts": sorted(alerts, key=lambda x: -x["level"]),
-        "has_prediction": True,
-        "demo": True
-    }
-
-
-def _get_demo_station(station_id):
-    """单站点 demo 数据"""
-    demo = _get_demo_data()
-    for s in demo.get("stations", []):
-        if s["id"] == station_id:
-            return {
-                "station_id": station_id,
-                "current": s["current"],
-                "water_quality_level": s["water_quality_level"],
-                "bloom_warning": s["bloom_warning"],
-                "predictions": s["predictions"],
-                "history": [],
-                "demo": True
-            }
-    return None
-
-
-def _get_demo_alerts():
-    """Demo 预警"""
-    demo = _get_demo_data()
-    return {
-        "update_time": demo["update_time"],
-        "alerts": demo.get("alerts", []),
-        "demo": True
-    }
 
 
 # 挂载静态文件 (Dashboard)

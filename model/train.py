@@ -16,10 +16,11 @@ import time
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 from loguru import logger
-from torch.cuda.amp import GradScaler, autocast
+from torch.amp import GradScaler, autocast
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from torch.utils.data import DataLoader
 
@@ -58,6 +59,9 @@ def parse_args():
     parser.add_argument("--save_dir", type=str, default="weights")
     parser.add_argument("--resume", type=str, default=None)
     parser.add_argument("--num_workers", type=int, default=4)
+    # 日期范围 (本地测试用，限制数据加载量)
+    parser.add_argument("--start_date", type=str, default=None, help="训练数据起始日期, e.g. 2024-01-01")
+    parser.add_argument("--end_date", type=str, default=None, help="训练数据结束日期, e.g. 2024-03-01")
     # 精度
     parser.add_argument("--fp16", action="store_true", default=True, help="混合精度训练")
     parser.add_argument("--no_fp16", dest="fp16", action="store_false")
@@ -75,6 +79,7 @@ def warmup_lr(optimizer, epoch, warmup_epochs, base_lr):
 def train_epoch(model, loader, criterion, optimizer, edge_index, edge_weight,
                 device, scaler, fp16, accum_steps):
     """训练一个 epoch"""
+    device_type = device.type
     model.train()
     total_loss = 0
     total_metrics = {}
@@ -87,7 +92,7 @@ def train_epoch(model, loader, criterion, optimizer, edge_index, edge_weight,
         y_wq = batch["y_wq"].to(device)
         y_bloom = batch["y_bloom"].to(device)
 
-        with autocast(enabled=fp16):
+        with autocast(device_type, enabled=fp16):
             wq_pred, wq_log_var, bloom_pred = model(x, edge_index, edge_weight)
             loss, metrics = criterion(wq_pred, wq_log_var, y_wq, bloom_pred, y_bloom)
             loss = loss / accum_steps
@@ -122,6 +127,7 @@ def train_epoch(model, loader, criterion, optimizer, edge_index, edge_weight,
 @torch.no_grad()
 def validate(model, loader, criterion, edge_index, edge_weight, device, fp16):
     """验证"""
+    device_type = device.type
     model.eval()
     total_loss = 0
     total_metrics = {}
@@ -137,7 +143,7 @@ def validate(model, loader, criterion, edge_index, edge_weight, device, fp16):
         y_wq = batch["y_wq"].to(device)
         y_bloom = batch["y_bloom"].to(device)
 
-        with autocast(enabled=fp16):
+        with autocast(device_type, enabled=fp16):
             wq_pred, wq_log_var, bloom_pred = model(x, edge_index, edge_weight)
             loss, metrics = criterion(wq_pred, wq_log_var, y_wq, bloom_pred, y_bloom)
 
@@ -202,17 +208,27 @@ def main():
     logger.info(f"图: {num_nodes} 节点, {edge_index.shape[1]} 边")
 
     # 数据集
-    logger.info("加载训练集 (2016-2023)...")
+    train_start = args.start_date or "2016-01-01"
+    train_end = args.end_date or "2023-12-31"
+    logger.info(f"加载训练集 ({train_start} ~ {train_end})...")
     train_dataset = TaihuDataset(
         data_dir=args.data_dir, graph_dir=args.graph_dir,
         history_steps=args.history_steps, predict_steps=args.predict_steps,
-        start_date="2016-01-01", end_date="2023-12-31", mode="train"
+        start_date=train_start, end_date=train_end, mode="train"
     )
-    logger.info("加载验证集 (2024)...")
+    # 验证集: 如果指定了 end_date，取最后 20% 时间段; 否则默认 2024
+    if args.end_date:
+        val_start = args.end_date
+        val_end_ts = pd.Timestamp(args.end_date) + pd.DateOffset(months=1)
+        val_end = val_end_ts.strftime("%Y-%m-%d")
+    else:
+        val_start = "2024-01-01"
+        val_end = "2024-12-31"
+    logger.info(f"加载验证集 ({val_start} ~ {val_end})...")
     val_dataset = TaihuDataset(
         data_dir=args.data_dir, graph_dir=args.graph_dir,
         history_steps=args.history_steps, predict_steps=args.predict_steps,
-        start_date="2024-01-01", end_date="2024-12-31", mode="val"
+        start_date=val_start, end_date=val_end, mode="val"
     )
 
     train_loader = DataLoader(
@@ -260,7 +276,8 @@ def main():
     scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=30, T_mult=2, eta_min=1e-6)
 
     # AMP Scaler
-    scaler = GradScaler(enabled=args.fp16)
+    device_type = device.type
+    scaler = GradScaler(device_type, enabled=args.fp16)
 
     # 恢复训练
     start_epoch = 0

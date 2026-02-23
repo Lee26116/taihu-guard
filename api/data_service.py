@@ -81,9 +81,8 @@ class DataService:
                     data = json.load(f)
 
                 for record in data.get("records", []):
-                    # 匹配站点 (按名称或 ID)
-                    if (record.get("station_id") == station_id or
-                        record.get("station_name", "").startswith(station_id)):
+                    # 精确匹配站点名称 (station_id 即断面名)
+                    if record.get("station_name") == station_id:
                         history.append({
                             "time": record.get("time", data.get("scrape_time", "")),
                             **{k: record.get(k) for k in [

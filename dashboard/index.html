@@ -31,7 +31,13 @@
             </div>
         </div>
         <div class="header-right">
-            <button class="about-btn" id="aboutBtn" title="关于系统" aria-label="关于系统">?</button>
+            <button class="intro-btn" id="introBtn" title="系统介绍" aria-label="系统介绍">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="8" cy="8" r="6.5"/>
+                    <path d="M8 7v4M8 5.2v0"/>
+                </svg>
+            </button>
+            <button class="about-btn" id="aboutBtn" title="模型详情" aria-label="模型详情">?</button>
             <div class="status-indicator" id="statusIndicator">
                 <span class="status-dot"></span>
                 <span class="status-text">实时</span>
@@ -41,13 +47,6 @@
             </div>
         </div>
     </header>
-
-    <!-- 数据来源说明横幅 (演示模式时显示) -->
-    <div class="data-notice" id="dataNotice" style="display:none">
-        <span class="data-notice-icon">&#9432;</span>
-        <span>当前展示为<strong>模拟演示数据</strong>，基于太湖历史统计特征合成，用于系统功能演示。实时监测数据接入后将自动切换为真实模型推理结果。</span>
-        <button class="data-notice-close" id="dataNoticeClose" aria-label="关闭提示">&times;</button>
-    </div>
 
     <!-- 统计概览条 -->
     <div class="stats-bar" id="statsBar">
@@ -81,8 +80,8 @@
         </div>
         <div class="stat-item">
             <span class="stat-icon">&#8982;</span>
-            <span class="stat-label">预测天数</span>
-            <span class="stat-value">14</span>
+            <span class="stat-label">数据源</span>
+            <span class="stat-value" style="font-size:12px">国控站</span>
         </div>
     </div>
 
@@ -299,7 +298,7 @@
                             <span>架构</span><span>ST-GAT V2</span>
                         </div>
                         <div class="model-summary-row">
-                            <span>参数量</span><span>~8M</span>
+                            <span>参数量</span><span>~2.8M</span>
                         </div>
                         <div class="model-summary-row">
                             <span>输入窗口</span><span>7天</span>
@@ -320,9 +319,11 @@
     <footer class="dashboard-footer">
         TaihuGuard v2.0
         <span class="footer-sep">|</span>
-        数据来源: 江苏省太湖水质自动监测站
+        数据来源: 生态环境部国控地表水水质自动监测站
         <span class="footer-sep">|</span>
         ST-GAT V2 &middot; Temporal Transformer + Spatial GAT
+        <span class="footer-sep">|</span>
+        &copy; 立丹环保科技
     </footer>
 
     <!-- 站点详情弹窗 -->
@@ -341,85 +342,297 @@
         </div>
     </div>
 
-    <!-- About 技术说明抽屉 -->
-    <div class="about-drawer-overlay" id="aboutDrawer" role="dialog" aria-modal="true">
+    <!-- 系统介绍抽屉 -->
+    <div class="about-drawer-overlay" id="introDrawer" role="dialog" aria-modal="true">
         <div class="about-drawer">
             <div class="about-drawer-header">
-                <h2>关于 TaihuGuard</h2>
-                <button class="about-drawer-close" id="aboutDrawerClose" aria-label="关闭">&times;</button>
+                <h2>系统介绍</h2>
+                <button class="about-drawer-close" id="introDrawerClose" aria-label="关闭">&times;</button>
             </div>
             <div class="about-drawer-body">
-                <!-- 项目概述 -->
+                <!-- 系统概述 -->
                 <div class="about-section">
-                    <h3>项目概述</h3>
+                    <h3>什么是太湖水质智能预警系统</h3>
                     <p>
-                        TaihuGuard 是基于时空图注意力网络 (ST-GAT V2) 的太湖流域水质智能预测与蓝藻预警系统。
-                        系统融合水质自动监测、气象观测和遥感反演数据，实现 11 项水质指标的 14 天逐日预测，
-                        并提供蓝藻水华分级预警，为太湖流域水环境管理提供智能决策支撑。
+                        太湖水质智能预警系统是由<strong>立丹环保科技</strong>开发的智能水环境监测平台。系统实时接入生态环境部国控水质自动监测站数据，
+                        结合气象观测数据，通过深度学习模型 (ST-GAT V2) 对太湖流域水质监测站点的水质变化进行预测，
+                        提前 <strong>14 天</strong>预报 11 项关键水质指标，并发出蓝藻水华分级预警。
                     </p>
                 </div>
 
-                <!-- 数据管线 -->
+                <!-- 监测参数 -->
                 <div class="about-section">
-                    <h3>数据管线</h3>
-                    <div class="pipeline-flow">
-                        <span class="pipeline-node">水质自动监测</span>
-                        <span class="pipeline-arrow">&rarr;</span>
-                        <span class="pipeline-node">气象观测</span>
-                        <span class="pipeline-arrow">&rarr;</span>
-                        <span class="pipeline-node">遥感反演</span>
-                        <span class="pipeline-arrow">&rarr;</span>
-                        <span class="pipeline-node">特征工程</span>
-                        <span class="pipeline-arrow">&rarr;</span>
-                        <span class="pipeline-node">ST-GAT V2</span>
-                        <span class="pipeline-arrow">&rarr;</span>
-                        <span class="pipeline-node">Dashboard</span>
+                    <h3>监测参数</h3>
+                    <div class="intro-param-grid">
+                        <div class="intro-param"><span class="intro-param-name">水温</span><span class="intro-param-unit">&deg;C</span></div>
+                        <div class="intro-param"><span class="intro-param-name">pH</span><span class="intro-param-unit">-</span></div>
+                        <div class="intro-param"><span class="intro-param-name">溶解氧 (DO)</span><span class="intro-param-unit">mg/L</span></div>
+                        <div class="intro-param"><span class="intro-param-name">高锰酸盐 (CODMn)</span><span class="intro-param-unit">mg/L</span></div>
+                        <div class="intro-param"><span class="intro-param-name">氨氮 (NH3-N)</span><span class="intro-param-unit">mg/L</span></div>
+                        <div class="intro-param"><span class="intro-param-name">总磷 (TP)</span><span class="intro-param-unit">mg/L</span></div>
+                        <div class="intro-param"><span class="intro-param-name">总氮 (TN)</span><span class="intro-param-unit">mg/L</span></div>
+                        <div class="intro-param"><span class="intro-param-name">叶绿素a (Chl-a)</span><span class="intro-param-unit">&mu;g/L</span></div>
+                        <div class="intro-param"><span class="intro-param-name">藻密度</span><span class="intro-param-unit">万cells/L</span></div>
+                        <div class="intro-param"><span class="intro-param-name">电导率</span><span class="intro-param-unit">&mu;S/cm</span></div>
+                        <div class="intro-param"><span class="intro-param-name">浊度</span><span class="intro-param-unit">NTU</span></div>
                     </div>
                 </div>
 
+                <!-- 数据来源 -->
+                <div class="about-section">
+                    <h3>数据来源</h3>
+                    <div class="intro-sources">
+                        <div class="intro-source">
+                            <div class="intro-source-icon">&#9678;</div>
+                            <div class="intro-source-body">
+                                <div class="intro-source-title">水质监测数据</div>
+                                <div class="intro-source-desc">
+                                    来自<strong>生态环境部</strong>地表水水质自动监测实时数据发布系统，覆盖太湖流域 76 个国控自动监测断面，
+                                    包含水温、pH、溶解氧、CODMn、氨氮、总磷、总氮、叶绿素a、藻密度等实时参数。
+                                </div>
+                            </div>
+                        </div>
+                        <div class="intro-source">
+                            <div class="intro-source-icon">&#9729;</div>
+                            <div class="intro-source-body">
+                                <div class="intro-source-title">气象观测数据</div>
+                                <div class="intro-source-desc">
+                                    通过<strong>和风天气 API</strong> 获取太湖流域 5 个气象站点的实时和预报数据，
+                                    包括气温、湿度、降水、风速风向、气压、云量等 15 维气象特征，为水质预测提供驱动因子。
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 预测方法 -->
+                <div class="about-section">
+                    <h3>预测原理</h3>
+                    <p>
+                        系统采用 <strong>ST-GAT V2</strong> (Spatio-Temporal Graph Attention Network) 深度学习模型。
+                        该模型将太湖流域的监测站点组织为图结构，使用 <strong>Temporal Transformer</strong> 捕获水质参数的时间变化规律，
+                        使用 <strong>Graph Attention Network</strong> 建模站点之间的空间相关性，
+                        融合时空特征后输出未来 14 天的水质预测值及不确定性估计。
+                    </p>
+                    <div class="pipeline-flow" style="margin-top: 12px;">
+                        <span class="pipeline-node">水质 + 气象数据</span>
+                        <span class="pipeline-arrow">&rarr;</span>
+                        <span class="pipeline-node">特征工程 (35维)</span>
+                        <span class="pipeline-arrow">&rarr;</span>
+                        <span class="pipeline-node">ST-GAT V2 推理</span>
+                        <span class="pipeline-arrow">&rarr;</span>
+                        <span class="pipeline-node">14天预测 + 预警</span>
+                    </div>
+                </div>
+
+                <!-- 蓝藻预警 -->
+                <div class="about-section">
+                    <h3>蓝藻预警分级</h3>
+                    <p style="margin-bottom: 10px;">
+                        系统依据叶绿素a浓度和藻密度对各站点进行蓝藻水华风险等级评估：
+                    </p>
+                    <div class="intro-bloom-levels">
+                        <div class="intro-bloom-level">
+                            <span class="intro-bloom-dot" style="background: #22c55e;"></span>
+                            <span class="intro-bloom-name">无风险</span>
+                            <span class="intro-bloom-cond">Chl-a &lt; 10 &mu;g/L</span>
+                        </div>
+                        <div class="intro-bloom-level">
+                            <span class="intro-bloom-dot" style="background: #eab308;"></span>
+                            <span class="intro-bloom-name">轻度</span>
+                            <span class="intro-bloom-cond">10 &le; Chl-a &lt; 26 &mu;g/L</span>
+                        </div>
+                        <div class="intro-bloom-level">
+                            <span class="intro-bloom-dot" style="background: #f97316;"></span>
+                            <span class="intro-bloom-name">中度</span>
+                            <span class="intro-bloom-cond">26 &le; Chl-a &lt; 64 &mu;g/L</span>
+                        </div>
+                        <div class="intro-bloom-level">
+                            <span class="intro-bloom-dot" style="background: #ef4444;"></span>
+                            <span class="intro-bloom-name">重度</span>
+                            <span class="intro-bloom-cond">Chl-a &ge; 64 &mu;g/L</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 更新频率 -->
+                <div class="about-section">
+                    <h3>更新频率</h3>
+                    <div class="intro-schedule">
+                        <div class="intro-schedule-item">
+                            <div class="intro-schedule-freq">每 4 小时</div>
+                            <div class="intro-schedule-desc">自动采集水质监测数据 + 气象数据，运行模型推理，更新预测结果</div>
+                        </div>
+                        <div class="intro-schedule-item">
+                            <div class="intro-schedule-freq">更新时间点</div>
+                            <div class="intro-schedule-desc">0:00 / 4:00 / 8:00 / 12:00 / 16:00 / 20:00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard 功能说明 -->
+                <div class="about-section">
+                    <h3>Dashboard 功能</h3>
+                    <div class="intro-features">
+                        <div class="intro-feature">
+                            <div class="intro-feature-title">交互式地图</div>
+                            <div class="intro-feature-desc">太湖流域监测站点的空间分布，支持按参数切换颜色渲染，点击站点查看详情。</div>
+                        </div>
+                        <div class="intro-feature">
+                            <div class="intro-feature-title">时间轴滑动</div>
+                            <div class="intro-feature-desc">通过滑动条查看过去 7 天到未来 14 天的水质变化，地图颜色和数据随之动态更新。</div>
+                        </div>
+                        <div class="intro-feature">
+                            <div class="intro-feature-title">水质趋势图</div>
+                            <div class="intro-feature-desc">单站点水质参数的时间序列 + 14 天预测曲线，含置信区间的不确定性可视化。</div>
+                        </div>
+                        <div class="intro-feature">
+                            <div class="intro-feature-title">蓝藻预警面板</div>
+                            <div class="intro-feature-desc">实时蓝藻水华风险预警列表，中度及以上预警高亮显示。</div>
+                        </div>
+                        <div class="intro-feature">
+                            <div class="intro-feature-title">全湖参数对比</div>
+                            <div class="intro-feature-desc">所有站点的水质参数横向对比柱状图，快速识别异常站点。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 水质评价标准 -->
+                <div class="about-section">
+                    <h3>水质评价标准</h3>
+                    <p style="margin-bottom: 10px;">
+                        依据《地表水环境质量标准》(GB 3838-2002)，主要参考 CODMn、氨氮、总磷进行水质类别判定：
+                    </p>
+                    <div class="intro-wq-table">
+                        <div class="intro-wq-row intro-wq-header">
+                            <span>类别</span><span>CODMn</span><span>NH3-N</span><span>TP</span>
+                        </div>
+                        <div class="intro-wq-row"><span style="color:#22c55e">I 类</span><span>&le;2</span><span>&le;0.15</span><span>&le;0.02</span></div>
+                        <div class="intro-wq-row"><span style="color:#84cc16">II 类</span><span>&le;4</span><span>&le;0.5</span><span>&le;0.1</span></div>
+                        <div class="intro-wq-row"><span style="color:#eab308">III 类</span><span>&le;6</span><span>&le;1.0</span><span>&le;0.2</span></div>
+                        <div class="intro-wq-row"><span style="color:#f97316">IV 类</span><span>&le;10</span><span>&le;1.5</span><span>&le;0.3</span></div>
+                        <div class="intro-wq-row"><span style="color:#ef4444">V 类</span><span>&le;15</span><span>&le;2.0</span><span>&le;0.4</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模型技术详情抽屉 -->
+    <div class="about-drawer-overlay" id="aboutDrawer" role="dialog" aria-modal="true">
+        <div class="about-drawer">
+            <div class="about-drawer-header">
+                <h2>模型技术详情</h2>
+                <button class="about-drawer-close" id="aboutDrawerClose" aria-label="关闭">&times;</button>
+            </div>
+            <div class="about-drawer-body">
                 <!-- 模型架构 -->
                 <div class="about-section">
-                    <h3>模型架构</h3>
+                    <h3>模型架构 &mdash; ST-GAT V2</h3>
                     <div class="arch-blocks">
                         <div class="arch-block">
                             <div class="arch-name">Temporal Transformer Encoder</div>
-                            <div class="arch-desc">多头自注意力机制捕获时间序列长程依赖，4层 Transformer，d_model=128</div>
+                            <div class="arch-desc">多头自注意力机制捕获时间序列长程依赖，4层 Transformer，d_model=128，8头注意力</div>
                         </div>
                         <div class="arch-block">
                             <div class="arch-name">Spatial GAT (Graph Attention Network)</div>
-                            <div class="arch-desc">深层图注意力网络建模站点间空间相关性，4层 GAT，8头注意力</div>
+                            <div class="arch-desc">深层图注意力网络建模站点间空间相关性，4层 GAT，8头注意力，基于站点距离构建图边</div>
                         </div>
                         <div class="arch-block">
                             <div class="arch-name">ST Fusion Layer</div>
-                            <div class="arch-desc">时空特征交叉融合，门控机制自适应权重分配</div>
+                            <div class="arch-desc">时空特征交叉融合，门控机制自适应权重分配，动态平衡时间信号和空间信号的贡献</div>
                         </div>
                         <div class="arch-block">
                             <div class="arch-name">双任务预测头</div>
-                            <div class="arch-desc">水质回归头 (14天 &times; 11指标) + 蓝藻分类头 (3级预警) + 不确定性估计</div>
+                            <div class="arch-desc">水质回归头 (14天 &times; 11指标，含 log-variance 不确定性估计) + 蓝藻分类头 (4级 softmax 预警)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 输入特征 -->
+                <div class="about-section">
+                    <h3>输入特征 (35维)</h3>
+                    <div class="intro-features">
+                        <div class="intro-feature">
+                            <div class="intro-feature-title">水质参数 (11维)</div>
+                            <div class="intro-feature-desc">水温、pH、DO、电导率、浊度、CODMn、NH3-N、TP、TN、Chl-a、藻密度</div>
+                        </div>
+                        <div class="intro-feature">
+                            <div class="intro-feature-title">气象特征 (15维)</div>
+                            <div class="intro-feature-desc">气温、湿度、露点、降水、风速风向、阵风、太阳辐射 (3维)、气压、云量、蒸散发、土壤温度</div>
+                        </div>
+                        <div class="intro-feature">
+                            <div class="intro-feature-title">时间编码 (6维)</div>
+                            <div class="intro-feature-desc">小时、日序、月份各自的 sin/cos 周期编码，捕获日周期和季节周期</div>
+                        </div>
+                        <div class="intro-feature">
+                            <div class="intro-feature-title">遥感特征 (3维)</div>
+                            <div class="intro-feature-desc">NDCI (归一化叶绿素指数)、FAI (浮游藻指数)、LST (地表温度)</div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 关键数据 -->
                 <div class="about-section">
-                    <h3>关键数据</h3>
+                    <h3>模型参数</h3>
                     <div class="key-stats">
                         <div class="key-stat">
-                            <div class="ks-value">~8M</div>
-                            <div class="ks-label">模型参数量</div>
+                            <div class="ks-value">~2.8M</div>
+                            <div class="ks-label">可训练参数量</div>
                         </div>
                         <div class="key-stat">
                             <div class="ks-value">35</div>
                             <div class="ks-label">输入特征维度</div>
                         </div>
                         <div class="key-stat">
+                            <div class="ks-value">42</div>
+                            <div class="ks-label">历史时间步 (7天&times;6)</div>
+                        </div>
+                        <div class="key-stat">
                             <div class="ks-value">14</div>
                             <div class="ks-label">预测天数</div>
                         </div>
                         <div class="key-stat">
-                            <div class="ks-value">11</div>
-                            <div class="ks-label">水质指标数</div>
+                            <div class="ks-value">61</div>
+                            <div class="ks-label">图节点 (站点) 数</div>
                         </div>
+                        <div class="key-stat">
+                            <div class="ks-value">ONNX</div>
+                            <div class="ks-label">推理引擎 (CPU)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 训练细节 -->
+                <div class="about-section">
+                    <h3>训练环境</h3>
+                    <div class="intro-features">
+                        <div class="intro-feature">
+                            <div class="intro-feature-title">GPU 训练</div>
+                            <div class="intro-feature-desc">RunPod RTX 5090 (32GB VRAM), batch_size=128, ~150 epochs, 约 1.5 小时完成训练</div>
+                        </div>
+                        <div class="intro-feature">
+                            <div class="intro-feature-title">优化策略</div>
+                            <div class="intro-feature-desc">预计算 Dataset + 批量化 GAT edge_index, GPU 利用率提升至 30-40%, 训练速度 3.5x 加速</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 数据管线 -->
+                <div class="about-section">
+                    <h3>数据管线架构</h3>
+                    <div class="pipeline-flow">
+                        <span class="pipeline-node">cnemc 国控站 API</span>
+                        <span class="pipeline-arrow">&rarr;</span>
+                        <span class="pipeline-node">和风天气 API</span>
+                        <span class="pipeline-arrow">&rarr;</span>
+                        <span class="pipeline-node">特征工程 + 归一化</span>
+                        <span class="pipeline-arrow">&rarr;</span>
+                        <span class="pipeline-node">ONNX 推理</span>
+                        <span class="pipeline-arrow">&rarr;</span>
+                        <span class="pipeline-node">反归一化 + 后处理</span>
+                        <span class="pipeline-arrow">&rarr;</span>
+                        <span class="pipeline-node">FastAPI + Dashboard</span>
                     </div>
                 </div>
 
@@ -428,14 +641,15 @@
                     <h3>技术栈</h3>
                     <div class="tech-tags">
                         <span class="tech-tag">PyTorch</span>
+                        <span class="tech-tag">PyG (GAT)</span>
+                        <span class="tech-tag">Transformer</span>
                         <span class="tech-tag">ONNX Runtime</span>
                         <span class="tech-tag">FastAPI</span>
                         <span class="tech-tag">Mapbox GL JS</span>
                         <span class="tech-tag">ECharts</span>
-                        <span class="tech-tag">PyG (GAT)</span>
-                        <span class="tech-tag">Transformer</span>
-                        <span class="tech-tag">SHAP</span>
                         <span class="tech-tag">RunPod GPU</span>
+                        <span class="tech-tag">Nginx</span>
+                        <span class="tech-tag">Systemd</span>
                     </div>
                 </div>
             </div>
