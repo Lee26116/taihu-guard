@@ -83,20 +83,6 @@ function updateTimeSeriesChart() {
         }
     }
 
-    // 无任何数据时显示空状态
-    if (historyDates.length === 0) {
-        timeSeriesChart.clear();
-        timeSeriesChart.setOption({
-            backgroundColor: 'transparent',
-            graphic: [{
-                type: 'text', left: 'center', top: 'middle',
-                style: { text: '暂无历史数据', fontSize: 14, fill: '#6b7280' }
-            }]
-        }, true);
-        updateRadarChart(station);
-        return;
-    }
-
     // 预测数据
     const predDates = [];
     const predValues = [];
@@ -114,23 +100,38 @@ function updateTimeSeriesChart() {
         });
     }
 
+    // 无任何数据时显示空状态
+    if (historyDates.length === 0 && predDates.length === 0) {
+        timeSeriesChart.clear();
+        timeSeriesChart.setOption({
+            backgroundColor: 'transparent',
+            graphic: [{
+                type: 'text', left: 'center', top: 'middle',
+                style: { text: '暂无历史数据', fontSize: 14, fill: '#6b7280' }
+            }]
+        }, true);
+        updateRadarChart(station);
+        return;
+    }
+
     const hasPredictions = predDates.length > 0;
     const allDates = [...historyDates, ...predDates];
     const historyFull = [...historyValues, ...Array(predDates.length).fill(null)];
 
-    // 预测线从历史最后一点开始连接
-    const lastHistVal = historyValues[historyValues.length - 1];
+    // 预测线从历史最后一点开始连接（无历史时直接显示预测）
+    const lastHistVal = historyValues.length > 0 ? historyValues[historyValues.length - 1] : null;
+    const padLen = Math.max(0, historyDates.length - 1);
     const predFull = hasPredictions
-        ? [...Array(historyDates.length - 1).fill(null), lastHistVal, ...predValues]
+        ? [...Array(padLen).fill(null), ...(lastHistVal != null ? [lastHistVal] : []), ...predValues]
         : [];
     const upperFull = hasPredictions
-        ? [...Array(historyDates.length - 1).fill(null), lastHistVal, ...predUpper]
+        ? [...Array(padLen).fill(null), ...(lastHistVal != null ? [lastHistVal] : []), ...predUpper]
         : [];
     const lowerFull = hasPredictions
-        ? [...Array(historyDates.length - 1).fill(null), lastHistVal, ...predLower]
+        ? [...Array(padLen).fill(null), ...(lastHistVal != null ? [lastHistVal] : []), ...predLower]
         : [];
 
-    const forecastStartIdx = historyDates.length - 1;
+    const forecastStartIdx = Math.max(0, historyDates.length - 1);
 
     const series = [
         // 实测值
